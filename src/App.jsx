@@ -4,20 +4,49 @@ import LocationForm from "./LocationForm.jsx";
 import data from "./testData.js";
 
 function App() {
+    const now = new Date()
+    const time = now.getHours() * 60 + now.getMinutes();
+    const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+    const formattedData = data.map((measurement) => {
+        return {
+            t: measurement.t.slice(11,16),
+            v: measurement.v
+        }
+    });
+
+    // use the reduce function to find the closest data point to the current time
+    const currentTideMeasurement = formattedData.reduce((prevMeasurement, currMeasurement) => {
+        // parse time from current data object into hours and minutes
+        const [currDataHours, currDataMinutes] = currMeasurement.t.split(":").map(Number);
+        // convert hours and minutes into minutes from 12
+        const currDataTime = currDataHours * 60 + currDataMinutes;
+
+        // parse time from previous data object into hours and minutes
+        const [prevDataHours, prevDataMinutes] = prevMeasurement.t.split(":").map(Number);
+        // convert hours and minutes into minutes from 12
+        const prevDataTime = prevDataHours * 60 + prevDataMinutes;
+
+        console.log(`Current obj time: ${currDataTime}\n Prev object time: ${prevDataTime}\n Current time: ${time}`);
+
+        return Math.abs(currDataTime - time) < Math.abs(prevDataTime - time) ? currMeasurement : prevMeasurement;
+    });
+
+    console.log(currentTideMeasurement);
+    console.log(formattedData);
 
   return (
     <>
       <div className={" m-5 p-5 bg-zinc-900 text-amber-50 h-full rounded-4xl"}>
           <div className={"flex justify-between mb-4"}>
-              <h1 className={"text-4xl"}>3.76 ft</h1>
+              <h1 className={"text-4xl"}>{parseFloat(currentTideMeasurement.v).toFixed(2)} ft</h1>
               <div className={"flex items-center gap-2"}>
                   <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Rising tide</h2>
                   <div className={"flex items-center justify-center rounded-full text-xl w-[1.5em] h-[1.5em] bg-blue-500/50 text-sky-500"}>↑</div>
               </div>
           </div>
           <div className={"h-40"}>
-              <TideChart data={data}/>
+              <TideChart data={formattedData} formattedTime={formattedTime} time={time}/>
           </div>
           <LocationForm />
 
@@ -35,6 +64,9 @@ function App() {
 }
 
 export default App;
+
+
+// OLD CODE
 
 // let time = [0, 0];
 //

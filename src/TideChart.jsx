@@ -1,9 +1,6 @@
 import {
-    LineChart,
-    Line,
     ResponsiveContainer,
     XAxis,
-    Tooltip,
     ReferenceLine,
     CartesianGrid,
     AreaChart,
@@ -11,7 +8,7 @@ import {
 } from 'recharts';
 
 // Create chart element
-function TideChart({data}) {
+function TideChart({data, formattedTime, time}) {
     const highs = [];
     const lows = [];
     const fullTide = [];
@@ -38,22 +35,13 @@ function TideChart({data}) {
     // Takes the fullTide data (highs and lows plus first reading and last reading)
     // calculates minutes as minutes since 12AM for tick display
     const formattedData = fullTide.map(data => {
-        const [hours, minutes] = data.t.slice(11, 16).split(":").map(Number);
+        const [hours, minutes] = data.t.split(":").map(Number);
         return {
             ...data,
             minutes: hours * 60 + minutes, // numeric value as minutes since 12AM
             time: data.t.slice(11, 16) // format to HH:MM
         };
     });
-
-
-    // getting current time
-    const now = new Date()
-    const time = now.getHours() * 60 + now.getMinutes();
-    const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-    // calculate current height in feet for label
-    console.log(data);
 
     return(
         <ResponsiveContainer width="100%" height="100%">
@@ -82,8 +70,9 @@ function TideChart({data}) {
                 />
                 <CartesianGrid vertical={true} horizontal={false} />
                 <ReferenceLine x={`${time}`} stroke="#9a3412" isFront={true} strokeWidth={5}>
-                    <Label value={`${formattedTime}`} position="bottom" fill="#9a3412"/>
+                    <Label value={`${formattedTime}`} position="insideBottomLeft" fill="#9a3412"/>
                 </ReferenceLine>
+                {/*<Tooltip />*/}
             </AreaChart>
         </ResponsiveContainer>
     );
