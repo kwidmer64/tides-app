@@ -7,6 +7,7 @@ import {useEffect, useMemo, useState} from "react";
 
 function App() {
     const [data, setData] = useState();
+    const [location, setLocation] = useState(null);
 
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
@@ -75,6 +76,10 @@ function App() {
         )
     }
 
+    const handleFormSubmit = (data) => {
+        setLocation(data);
+    }
+
   return (
     <>
       <div className={" m-5 p-5 bg-zinc-900 text-amber-50 h-full rounded-4xl"}>
@@ -88,7 +93,8 @@ function App() {
           <div className={"h-40"}>
               <TideChart tideDay={tideDay} formattedTime={formattedTime} time={time}/>
           </div>
-          <LocationForm />
+          <LocationForm onSubmit={handleFormSubmit} />
+          {location && <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>{location}</h2>}
       </div>
     </>
   )
