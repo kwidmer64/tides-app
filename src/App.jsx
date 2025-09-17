@@ -1,40 +1,78 @@
 import './App.css';
 import TideChart from "./TideChart.jsx";
 import LocationForm from "./LocationForm.jsx";
-import data from "./testData.js";
+// import data from "./testData.js";
 import {formatData, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
+import {useEffect, useMemo, useState} from "react";
 
 function App() {
+    const [data, setData] = useState();
+
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
     const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${now.getDate()}`;
+    console.log(formattedDate);
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9414290&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`
 
-    const formattedData = formatData(data);
-    const currentTideMeasurement = getCurrentTideMeasurement(formattedData, time);
-    const tideDay = getDayTideCycle(formattedData); // get the highest/lowest tides for the day
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await fetch(url);
+                const jsonResponse = await res.json();
+                const responseData = jsonResponse.predictions;
 
-    // set text for the tide status label
-    let tideStatusText;
-    let tideStatusIndicator;
-    switch (currentTideMeasurement.tideStatus) {
-        case 2:
-            tideStatusText = "High tide";
-            tideStatusIndicator = "↑";
-            break;
-        case 1:
-            tideStatusText = "Rising tide";
-            tideStatusIndicator = "↑";
-            break;
-        case -1:
-            tideStatusText = "Falling tide";
-            tideStatusIndicator = "↓";
-            break;
-        case -2:
-            tideStatusText = "Low tide";
-            tideStatusIndicator = "↓";
-            break;
-        default:
-            tideStatusText = `tideStatus: ${currentTideMeasurement.tideStatus}`;
+                setData(responseData);
+            } catch (err) {
+                console.log(err);
+            }
+        }
+
+        fetchData();
+
+    }, [url]);
+
+    const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
+        if (!data) return {};
+
+        const formattedData = formatData(data);
+        const currentTideMeasurement = getCurrentTideMeasurement(formattedData, time);
+        const tideDay = getDayTideCycle(formattedData); // get the highest/lowest tides for the day
+
+        // set text for the tide status label
+        let tideStatusText;
+        let tideStatusIndicator;
+
+        switch (currentTideMeasurement.tideStatus) {
+            case 2:
+                tideStatusText = "High tide";
+                tideStatusIndicator = "↑";
+                break;
+            case 1:
+                tideStatusText = "Rising tide";
+                tideStatusIndicator = "↑";
+                break;
+            case -1:
+                tideStatusText = "Falling tide";
+                tideStatusIndicator = "↓";
+                break;
+            case -2:
+                tideStatusText = "Low tide";
+                tideStatusIndicator = "↓";
+                break;
+            default:
+                tideStatusText = `tideStatus: ${currentTideMeasurement.tideStatus}`;
+        }
+
+        return {currentTideMeasurement, tideDay, tideStatus: [tideStatusText, tideStatusIndicator]};
+    }, [data, time]);
+
+    if (!currentTideMeasurement || !tideStatus) {
+        return (
+            <div className={" m-5 p-5 bg-zinc-900 text-amber-50 h-full rounded-4xl"}>
+                <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Loading...</h2>
+            </div>
+        )
     }
 
   return (
@@ -43,8 +81,8 @@ function App() {
           <div className={"flex justify-between mb-4"}>
               <h1 className={"text-4xl"}>{parseFloat(currentTideMeasurement.v).toFixed(2)} ft</h1>
               <div className={"flex items-center gap-2"}>
-                  <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>{tideStatusText}</h2>
-                  <div className={"flex items-center justify-center rounded-full text-xl w-[1.5em] h-[1.5em] bg-blue-500/50 text-sky-500"}>{tideStatusIndicator}</div>
+                  <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>{tideStatus[0]}</h2>
+                  <div className={"flex items-center justify-center rounded-full text-xl w-[1.5em] h-[1.5em] bg-blue-500/50 text-sky-500"}>{tideStatus[1]}</div>
               </div>
           </div>
           <div className={"h-40"}>
