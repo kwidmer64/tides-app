@@ -8,33 +8,10 @@ import {
 } from 'recharts';
 
 // Create chart element
-function TideChart({data, formattedTime, time}) {
-    const highs = [];
-    const lows = [];
-    const fullTide = [];
-
-    // get the first element in the data array (this will be closest to 00:00)
-    fullTide.push(data[0]);
-    // get the highest and lowest points for the day
-    for (let idx = 1; idx < data.length - 1; idx++) {
-        const prev = parseFloat(data[idx - 1].v);
-        const curr = parseFloat(data[idx].v);
-        const next = parseFloat(data[idx + 1].v);
-
-        if (curr > prev && curr >= next) {
-            fullTide.push(data[idx])
-            highs.push(data[idx]);
-        } else if (curr < prev && curr <= next) {
-            fullTide.push(data[idx])
-            lows.push(data[idx]);
-        }
-    }
-    // get the last element in the data array (this will be closest to 23:59)
-    fullTide.push(data[data.length - 1]);
-
+function TideChart({tideDay, formattedTime, time}) {
     // Takes the fullTide data (highs and lows plus first reading and last reading)
     // calculates minutes as minutes since 12AM for tick display
-    const formattedData = fullTide.map(data => {
+    const tideData = tideDay.map(data => {
         const [hours, minutes] = data.t.split(":").map(Number);
         return {
             ...data,
@@ -45,7 +22,7 @@ function TideChart({data, formattedTime, time}) {
 
     return(
         <ResponsiveContainer width="100%" height="100%">
-            <AreaChart width={600} height={300} data={formattedData}>
+            <AreaChart width={600} height={300} data={tideData}>
                 <def>
                     <linearGradient id="colorHeight" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8}/>
