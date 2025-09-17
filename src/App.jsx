@@ -8,12 +8,39 @@ function App() {
     const time = now.getHours() * 60 + now.getMinutes();
     const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+    // format the data int ocorrect HH:MM format
     const formattedData = data.map((measurement) => {
         return {
             t: measurement.t.slice(11,16),
             v: measurement.v
         }
     });
+
+    // calculate rising/falling tide
+    // rising = 1, falling = -1, high tide = 2, low tide = -2
+    for (let idx = 1; idx < formattedData.length - 1; idx++) {
+        const prev = parseFloat(formattedData[idx - 1].v);
+        const curr = parseFloat(formattedData[idx].v);
+        const next = parseFloat(formattedData[idx + 1].v);
+
+        let tideStatus = 0;
+
+        if (curr >= prev && curr >= next) {
+            tideStatus = 2;
+        } else if (curr <= prev && curr <= next) {
+            tideStatus = -2;
+        } else if (curr > prev) {
+            tideStatus = 1;
+        } else {
+            tideStatus = -1;
+        }
+
+        // create new data object with new tide status
+        formattedData[idx] = {
+            ...formattedData[idx],
+            tideStatus: tideStatus
+        }
+    }
 
     // use the reduce function to find the closest data point to the current time
     const currentTideMeasurement = formattedData.reduce((prevMeasurement, currMeasurement) => {
@@ -27,13 +54,27 @@ function App() {
         // convert hours and minutes into minutes from 12
         const prevDataTime = prevDataHours * 60 + prevDataMinutes;
 
-        console.log(`Current obj time: ${currDataTime}\n Prev object time: ${prevDataTime}\n Current time: ${time}`);
-
         return Math.abs(currDataTime - time) < Math.abs(prevDataTime - time) ? currMeasurement : prevMeasurement;
     });
 
-    console.log(currentTideMeasurement);
-    console.log(formattedData);
+    // set text for the tide status label
+    let tideStatusText;
+    switch (currentTideMeasurement.tideStatus) {
+        case 2:
+            tideStatusText = "High tide";
+            break;
+        case 1:
+            tideStatusText = "Rising tide";
+            break;
+        case -1:
+            tideStatusText = "Falling tide";
+            break;
+        case -2:
+            tideStatusText = "Low tide";
+            break;
+        default:
+            tideStatusText = `tideStatus: ${currentTideMeasurement.tideStatus}`;
+    }
 
   return (
     <>
@@ -41,7 +82,7 @@ function App() {
           <div className={"flex justify-between mb-4"}>
               <h1 className={"text-4xl"}>{parseFloat(currentTideMeasurement.v).toFixed(2)} ft</h1>
               <div className={"flex items-center gap-2"}>
-                  <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Rising tide</h2>
+                  <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>{tideStatusText}</h2>
                   <div className={"flex items-center justify-center rounded-full text-xl w-[1.5em] h-[1.5em] bg-blue-500/50 text-sky-500"}>↑</div>
               </div>
           </div>
