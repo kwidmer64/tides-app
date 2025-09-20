@@ -1,7 +1,7 @@
 import {useState} from "react";
 
 const LocationForm = ({ onSubmit }) => {
-    const [location, setLocation] = useState();
+    const [location, setLocation] = useState(null);
 
     const handleSubmit = (event) => {
         event.preventDefault(); // prevent the default page refresh of a form submit

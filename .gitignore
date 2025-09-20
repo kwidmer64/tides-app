@@ -1,3 +1,4 @@
+# ###### REACT
 # Logs
 logs
 *.log
@@ -22,3 +23,54 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ###### FUNCTIONS
+
+functions/bin
+functions/obj
+functions/csx
+functions/.vs
+functions/edge
+functions/Publish
+
+functions/*.user
+functions/*.suo
+functions/*.cscfg
+functions/*.Cache
+functions/project.lock.json
+
+functions/packages
+functions/TestResults
+
+functions/tools/NuGet.exe
+functions/App_Data
+functions/secrets
+functions/data
+functions/.secrets
+functions/appsettings.json
+functions/local.settings.json
+
+functions/node_modules
+functions/dist
+
+# Local python packages
+functions/.python_packages/
+
+# Python Environments
+functions/.env
+functions/.venv
+functions/env/
+functions/venv/
+functions/ENV/
+functions/env.bak/
+functions/venv.bak/
+
+# Byte-compiled / optimized / DLL files
+functions/__pycache__/
+functions/*.py[cod]
+functions/*$py.class
+
+# Azurite artifacts
+functions/__blobstorage__
+functions/__queuestorage__
+functions/__azurite_db*__.json

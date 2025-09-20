@@ -5,33 +5,39 @@ import LocationForm from "./LocationForm.jsx";
 import {formatData, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
 import {useEffect, useMemo, useState} from "react";
 
-function App() {
-    const [data, setData] = useState();
-    const [location, setLocation] = useState(null);
+function App({ stations }) {
+    const [data, setData] = useState(null);
+    const [location, setLocation] = useState("Surf City, NJ");
 
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
     const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
     const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${now.getDate()}`;
-    console.log(formattedDate);
-    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=9414290&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`
 
     useEffect(() => {
-        const fetchData = async () => {
+        const convertLocationToCoords = async () => {
             try {
+                const url = `/api/GetCoords?location=${location}`;
                 const res = await fetch(url);
                 const jsonResponse = await res.json();
-                const responseData = jsonResponse.predictions;
+                const closestStationId = getClosestStation(stations, {lat: jsonResponse.lat, lng: jsonResponse.lng}).id;
+
+                const tidesUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
+                const tidesRes = await fetch(tidesUrl);
+                const tidesJson = await tidesRes.json();
+                const responseData = tidesJson.predictions;
 
                 setData(responseData);
+
+                console.log(closestStationId);
+                console.log(responseData);
             } catch (err) {
                 console.log(err);
             }
         }
 
-        fetchData();
-
-    }, [url]);
+        convertLocationToCoords();
+    }, [stations, formattedDate, location]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
         if (!data) return {};
@@ -67,6 +73,23 @@ function App() {
 
         return {currentTideMeasurement, tideDay, tideStatus: [tideStatusText, tideStatusIndicator]};
     }, [data, time]);
+
+    const getClosestStation = (stations, coords) => {
+        function calcDistance(lat1, lon1, lat2, lon2) {
+            return Math.sqrt((lat2 - lat1)**2 + (lon2 - lon1)**2);
+        }
+
+        return stations.reduce((prev, curr) => {
+            const currDistance = calcDistance(coords.lat, coords.lng, curr.lat, curr.lng);
+            const prevDistance = calcDistance(coords.lat, coords.lng, prev.lat, prev.lng);
+
+            if (currDistance < prevDistance) {
+                return curr;
+            } else {
+                return prev
+            }
+        });
+    }
 
     if (!currentTideMeasurement || !tideStatus) {
         return (
