@@ -1,8 +1,7 @@
 import './App.css';
 import TideChart from "./TideChart.jsx";
 import LocationForm from "./LocationForm.jsx";
-// import data from "./testData.js";
-import {formatData, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
+import {formatData, getClosestStation, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
 import {useEffect, useMemo, useState} from "react";
 
 function App({ stations }) {
@@ -15,7 +14,7 @@ function App({ stations }) {
     const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${now.getDate()}`;
 
     useEffect(() => {
-        const convertLocationToCoords = async () => {
+        const fetchTidesData = async () => {
             try {
                 const url = `/api/GetCoords?location=${location}`;
                 const res = await fetch(url);
@@ -36,7 +35,7 @@ function App({ stations }) {
             }
         }
 
-        convertLocationToCoords();
+        fetchTidesData();
     }, [stations, formattedDate, location]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
@@ -73,23 +72,6 @@ function App({ stations }) {
 
         return {currentTideMeasurement, tideDay, tideStatus: [tideStatusText, tideStatusIndicator]};
     }, [data, time]);
-
-    const getClosestStation = (stations, coords) => {
-        function calcDistance(lat1, lon1, lat2, lon2) {
-            return Math.sqrt((lat2 - lat1)**2 + (lon2 - lon1)**2);
-        }
-
-        return stations.reduce((prev, curr) => {
-            const currDistance = calcDistance(coords.lat, coords.lng, curr.lat, curr.lng);
-            const prevDistance = calcDistance(coords.lat, coords.lng, prev.lat, prev.lng);
-
-            if (currDistance < prevDistance) {
-                return curr;
-            } else {
-                return prev
-            }
-        });
-    }
 
     if (!currentTideMeasurement || !tideStatus) {
         return (
