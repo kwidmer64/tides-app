@@ -23,11 +23,17 @@ app.http('GetCoords', {
         try {
             const res = await fetch(apiURL);
             const jsonResponse = await res.json();
+            const displayName = [
+                jsonResponse[0].display_name.split(',')[0].trim(),
+                jsonResponse[0].display_name.split(',')[2].trim()
+            ]
             const responseLocation = {
-                location: queryLocation,
+                location: displayName,
                 lat: jsonResponse[0].lat,
                 lng: jsonResponse[0].lon
             };
+
+            console.log(jsonResponse);
 
             return {
                 status: 200,

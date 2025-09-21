@@ -7,6 +7,7 @@ import {useEffect, useMemo, useState} from "react";
 function App({ stations }) {
     const [data, setData] = useState(null);
     const [location, setLocation] = useState("Surf City, NJ");
+    const [displayLocation, setDisplayLocation] = useState("Surf City, New Jersey");
 
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
@@ -27,9 +28,7 @@ function App({ stations }) {
                 const responseData = tidesJson.predictions;
 
                 setData(responseData);
-
-                console.log(closestStationId);
-                console.log(responseData);
+                setDisplayLocation(`${jsonResponse.location[0]}, ${jsonResponse.location[1]}`);
             } catch (err) {
                 console.log(err);
             }
@@ -83,11 +82,13 @@ function App({ stations }) {
 
     const handleFormSubmit = (data) => {
         setLocation(data);
+        setDisplayLocation("Loading...");
     }
 
   return (
     <>
       <div className={" m-5 p-5 bg-zinc-900 text-amber-50 h-full rounded-4xl"}>
+          {displayLocation && <p className={"text-nowrap text-neutral-400 text-md mb-2"}>{displayLocation}</p>}
           <div className={"flex justify-between mb-4"}>
               <h1 className={"text-4xl"}>{parseFloat(currentTideMeasurement.v).toFixed(2)} ft</h1>
               <div className={"flex items-center gap-2"}>
@@ -99,7 +100,8 @@ function App({ stations }) {
               <TideChart tideDay={tideDay} formattedTime={formattedTime} time={time}/>
           </div>
           <LocationForm onSubmit={handleFormSubmit} />
-          {location && <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>{location}</h2>}
+          {/*{displayLocation && <p className={"text-zinc-600 mt-2"}>Location</p>}*/}
+          {/*{displayLocation && <h2 className={"text-nowrap text-neutral-300 text-lg me-1"}>{displayLocation}</h2>}*/}
       </div>
     </>
   )
