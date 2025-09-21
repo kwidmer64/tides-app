@@ -74,7 +74,7 @@ function App({ stations }) {
 
     if (!currentTideMeasurement || !tideStatus) {
         return (
-            <div className={" m-5 p-5 bg-zinc-900 text-amber-50 h-full rounded-4xl"}>
+            <div className={" p-5 bg-zinc-900 text-amber-50 h-full"}>
                 <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Loading...</h2>
             </div>
         )
