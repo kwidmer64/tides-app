@@ -9,7 +9,7 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
 
 - **Error handling is limited**  
   - Invalid inputs like `"new york"` may cause the app to crash.  
-  - When any invalid input is entered, the app defaults to Nawiliwili, HI.  
+  - When any invalid input is entered, the app defaults to Nawiliwili, HI, and the displayed location does not change.  
 
 - **Location restrictions**  
   - The app can only display **US tide data**, as it relies on the NOAA Tides & Currents API.  
