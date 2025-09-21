@@ -87,7 +87,7 @@ function App({ stations }) {
 
   return (
     <>
-      <div className={" m-5 p-5 bg-zinc-900 text-amber-50 h-full rounded-4xl"}>
+      <div className={" p-5 bg-zinc-900 text-amber-50 h-full"}>
           {displayLocation && <p className={"text-nowrap text-neutral-400 text-md mb-2"}>{displayLocation}</p>}
           <div className={"flex justify-between mb-4"}>
               <h1 className={"text-4xl"}>{parseFloat(currentTideMeasurement.v).toFixed(2)} ft</h1>
