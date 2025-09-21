@@ -18,6 +18,9 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
 - **Input limitations**  
   - Locations must be entered as `'City, State'` (two-letter state abbreviation).  
   - Non-US locations (e.g., `"London, UK"`) may result in errors.
+ 
+- **Other issues**  
+  - Pressing `Go` without changing location value will change the displayed location to `Loading...` until a new value is entered
 
 ---
 
