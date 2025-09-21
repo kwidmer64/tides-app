@@ -23,7 +23,7 @@ const LocationForm = ({ onSubmit }) => {
                        placeholder="Enter location"
                        onChange={handleChange}
                 />
-                <button type="submit" className="bg-sky-500 py-2 px-3 w-1/12 rounded-md text-zinc-900 transition-all hover:bg-sky-600 hover:cursor-pointer">Go</button>
+                <button type="submit" className="bg-sky-500 py-2 px-3 w-2/12 rounded-md text-zinc-900 transition-all hover:bg-sky-600 hover:cursor-pointer">Go</button>
                 {/*<label htmlFor="location" className="absolute left-3 top-2 text-gray-500 text-sm">*/}
                 {/*    Location*/}
                 {/*</label>*/}
