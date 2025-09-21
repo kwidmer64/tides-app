@@ -5,7 +5,7 @@ app.http('GetCoords', {
     handler: async (request, context) => {
         context.log(`Http function processed request for url "${request.url}"`);
         const queryLocation = request.query.get('location').split(",").map(item => item.trim());
-        const apiKey = process.env.NOAA_API_KEY;
+        const apiKey = process.env.GEO_API_KEY;
 
         if (queryLocation.length !== 2 || !queryLocation) {
             return {
