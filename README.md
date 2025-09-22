@@ -22,6 +22,7 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
 - **Display issues**  
   - Pressing `Go` without changing location value will change the displayed location to `Loading...` until a new value is entered
   - Some locations display `City, County` instead of the intended `City, State`
+  - THe app assumes the user is in the same time zone as the specified location, which can lead to incorrect data being displayed
 
 ---
 
