@@ -19,8 +19,9 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
   - Locations must be entered as `'City, State'` (two-letter state abbreviation).  
   - Non-US locations (e.g., `"London, UK"`) may result in errors.
  
-- **Other issues**  
+- **Display issues**  
   - Pressing `Go` without changing location value will change the displayed location to `Loading...` until a new value is entered
+  - Some locations display `City, County` instead of the intended `City, State`
 
 ---
 
