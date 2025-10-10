@@ -12,7 +12,7 @@ function App({ stations }) {
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
     const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${String((now.getDate() + 1)).padStart(2, "0")}`;
+    const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${String((now.getDate())).padStart(2, "0")}`;
 
     useEffect(() => {
         const fetchTidesData = async () => {
