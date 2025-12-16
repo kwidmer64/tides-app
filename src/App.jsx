@@ -1,7 +1,7 @@
 import './App.css';
 import TideChart from "./TideChart.jsx";
 import LocationForm from "./LocationForm.jsx";
-import {formatData, getClosestStation, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
+import {formatData, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
 import {useEffect, useMemo, useState} from "react";
 
 function App({ stations }) {
@@ -12,30 +12,25 @@ function App({ stations }) {
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
     const formattedTime = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${String((now.getDate())).padStart(2, "0")}`;
 
+    // GET request on GetCoords
+    // gets the closest station Id
+    // then fetches tides
     useEffect(() => {
         const fetchTidesData = async () => {
             try {
-                const url = `/api/GetCoords?location=${location}`;
-                const res = await fetch(url);
-                const jsonResponse = await res.json();
-                const closestStationId = getClosestStation(stations, {lat: jsonResponse.lat, lng: jsonResponse.lng}).id;
+                const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`);
+                const predictionsData = await predictionsRes.json();
 
-                const tidesUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
-                const tidesRes = await fetch(tidesUrl);
-                const tidesJson = await tidesRes.json();
-                const responseData = tidesJson.predictions;
-
-                setData(responseData);
-                setDisplayLocation(`${jsonResponse.location[0]}, ${jsonResponse.location[1]}`);
+                setData(predictionsData.predictions);
+                setDisplayLocation(`${predictionsData.displayName}`);
             } catch (err) {
                 console.log(err);
             }
         }
 
         fetchTidesData();
-    }, [stations, formattedDate, location]);
+    }, [stations, location]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
         if (!data) return {};
