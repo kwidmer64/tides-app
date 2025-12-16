@@ -84,7 +84,7 @@ app.http('GetTides', {
 
         // fetch the NOAA tides api
         try {
-            const closestStationId = getClosestStation(stations, {lat: geocodeData.lat, lng: geocodeData.lon}).id;
+            const closestStationId = getClosestStation({lat: geocodeData.lat, lng: geocodeData.lon}).id;
 
             const tidesApiUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
             const tidesRes = await fetch(tidesApiUrl);
