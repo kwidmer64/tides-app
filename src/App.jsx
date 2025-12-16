@@ -17,19 +17,23 @@ function App({ stations }) {
     // gets the closest station Id
     // then fetches tides
     useEffect(() => {
+        // function that returns predictions data
         const fetchTidesData = async () => {
             try {
                 const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`);
-                const predictionsData = await predictionsRes.json();
+                return await predictionsRes.json();
 
-                setData(predictionsData.predictions);
-                setDisplayLocation(`${predictionsData.displayName}`);
+
             } catch (err) {
                 console.log(err);
             }
         }
 
-        fetchTidesData();
+        fetchTidesData().then(predictionsData => {
+            // set the predictions data and display location
+            setData(predictionsData.predictions);
+            setDisplayLocation(`${predictionsData.name}`);
+        });
     }, [stations, location]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
