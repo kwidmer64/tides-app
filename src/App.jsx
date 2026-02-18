@@ -89,14 +89,14 @@ function App({ stations }) {
 
   return (
     <>
-      <div className={" p-5 bg-zinc-900 text-amber-50 h-full"}>
+      <div className={"p-5 pt-3 bg-zinc-900 text-amber-50 h-full"}>
           {displayLocation && (
-              <div className="group mb-2 cursor-default">
-                  <p className="text-nowrap text-neutral-400 text-md transition-transform duration-300 ease-out group-hover:-translate-y-1">
+              <div className="group flex flex-col items-start justify-evenly h-12 mb-2 cursor-default">
+                  <p className="text-nowrap text-neutral-400 text-md">
                       {displayLocation}
                   </p>
                   {fullDisplayLocation && (
-                      <p className="text-sm text-neutral-500 opacity-0 max-h-0 overflow-hidden transition-all duration-300 ease-out group-hover:opacity-100 group-hover:max-h-8">
+                      <p className="text-sm text-neutral-500 hidden group-hover:block">
                           {fullDisplayLocation}
                       </p>
                   )}
