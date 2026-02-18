@@ -121,7 +121,7 @@ function getClosestStation(coords) {
         return Math.sqrt((lat2 - lat1)**2 + (lon2 - lon1)**2);
     }
 
-    return stations.reduce((prev, curr) => {
+    const station = stations.reduce((prev, curr) => {
         const currDistance = calcDistance(coords.lat, coords.lng, curr.lat, curr.lng);
         const prevDistance = calcDistance(coords.lat, coords.lng, prev.lat, prev.lng);
 
@@ -131,4 +131,8 @@ function getClosestStation(coords) {
             return prev
         }
     });
+
+    console.log(station);
+
+    return station;
 }
