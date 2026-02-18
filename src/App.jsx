@@ -34,7 +34,18 @@ function App({ stations }) {
             // set the predictions data and display location
             setData(predictionsData.predictions);
             setDisplayLocation(`${predictionsData.name}`);
-            setFullDisplayLocation(predictionsData.displayName || "");
+            // Build formatted full location from structured address
+            const address = predictionsData.address;
+            if (address) {
+                const city = address.city || address.town || address.village || "";
+                const state = address.state || "";
+                const parts = [predictionsData.name, city, state].filter(Boolean);
+                // Remove duplicates (e.g., if name === city)
+                const unique = parts.filter((part, i) => parts.indexOf(part) === i);
+                setFullDisplayLocation(unique.join(", "));
+            } else {
+                setFullDisplayLocation(predictionsData.displayName || "");
+            }
         });
     }, [stations, location]);
 
