@@ -8,6 +8,7 @@ function App({ stations }) {
     const [data, setData] = useState(null);
     const [location, setLocation] = useState("Surf City, NJ");
     const [displayLocation, setDisplayLocation] = useState("Surf City, New Jersey");
+    const [fullDisplayLocation, setFullDisplayLocation] = useState("");
 
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
@@ -33,6 +34,7 @@ function App({ stations }) {
             // set the predictions data and display location
             setData(predictionsData.predictions);
             setDisplayLocation(`${predictionsData.name}`);
+            setFullDisplayLocation(predictionsData.displayName || "");
         });
     }, [stations, location]);
 
@@ -82,12 +84,24 @@ function App({ stations }) {
     const handleFormSubmit = (data) => {
         setLocation(data);
         setDisplayLocation("Loading...");
+        setFullDisplayLocation("");
     }
 
   return (
     <>
       <div className={" p-5 bg-zinc-900 text-amber-50 h-full"}>
-          {displayLocation && <p className={"text-nowrap text-neutral-400 text-md mb-2"}>{displayLocation}</p>}
+          {displayLocation && (
+              <div className="group mb-2 cursor-default">
+                  <p className="text-nowrap text-neutral-400 text-md transition-transform duration-300 ease-out group-hover:-translate-y-1">
+                      {displayLocation}
+                  </p>
+                  {fullDisplayLocation && (
+                      <p className="text-sm text-neutral-500 opacity-0 max-h-0 overflow-hidden transition-all duration-300 ease-out group-hover:opacity-100 group-hover:max-h-8">
+                          {fullDisplayLocation}
+                      </p>
+                  )}
+              </div>
+          )}
           <div className={"flex justify-between mb-4"}>
               <h1 className={"text-4xl"}>{parseFloat(currentTideMeasurement.v).toFixed(2)} ft</h1>
               <div className={"flex items-center gap-2"}>
