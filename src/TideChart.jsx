@@ -29,7 +29,7 @@ function TideChart({tideDay, formattedTime, time}) {
                         <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                     </linearGradient>
                 </def>
-                <Area dataKey="v" dot={false} type="monotone" stroke="#0ea5e9" strokeWidth={4} fill="url(#colorHeight)"/>
+                <Area dataKey="v" dot={false} type="monotone" stroke="#0ea5e9" strokeWidth={4} fill="url(#colorHeight)" baseValue="dataMin"/>
                 <XAxis
                     type="number"
                     dataKey="minutes"
