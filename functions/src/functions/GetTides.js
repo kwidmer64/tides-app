@@ -94,6 +94,7 @@ app.http('GetTides', {
             const responseJson = {
                 name: geocodeData.name,
                 displayName: geocodeData.display_name,
+                address: geocodeData.address,
                 predictions: tidesData.predictions,
             };
 
@@ -131,8 +132,6 @@ function getClosestStation(coords) {
             return prev
         }
     });
-
-    console.log(station);
 
     return station;
 }
