@@ -4,11 +4,12 @@ import LocationForm from "./LocationForm.jsx";
 import {formatData, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
 import {useEffect, useMemo, useState} from "react";
 
-function App({ stations }) {
+function App() {
     const [data, setData] = useState(null);
     const [location, setLocation] = useState("Surf City, NJ");
     const [displayLocation, setDisplayLocation] = useState("Surf City, New Jersey");
     const [fullDisplayLocation, setFullDisplayLocation] = useState("");
+    const [fetchError, setFetchError] = useState(null);
 
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
@@ -20,15 +21,14 @@ function App({ stations }) {
     useEffect(() => {
         // function that returns predictions data
         const fetchTidesData = async () => {
-            try {
-                const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`);
-                return await predictionsRes.json();
-
-
-            } catch (err) {
-                console.log(err);
+            const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`);
+            if (!predictionsRes.ok) {
+                throw new Error(`GetTides request failed with status: ${predictionsRes.status}`);
             }
+            return await predictionsRes.json();
         }
+
+        setFetchError(null);
 
         fetchTidesData().then(predictionsData => {
             // set the predictions data and display location
@@ -46,8 +46,11 @@ function App({ stations }) {
             } else {
                 setFullDisplayLocation(predictionsData.displayName || "");
             }
+        }).catch(err => {
+            console.error(err);
+            setFetchError("Couldn't load tide data for that location. Try again.");
         });
-    }, [stations, location]);
+    }, [location]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
         if (!data) return {};
@@ -87,7 +90,11 @@ function App({ stations }) {
     if (!currentTideMeasurement || !tideStatus) {
         return (
             <div className={" p-5 bg-zinc-900 text-amber-50 h-full"}>
-                <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Loading...</h2>
+                {fetchError ? (
+                    <h2 className={"text-nowrap text-red-400 text-lg me-1"}>{fetchError}</h2>
+                ) : (
+                    <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Loading...</h2>
+                )}
             </div>
         )
     }
