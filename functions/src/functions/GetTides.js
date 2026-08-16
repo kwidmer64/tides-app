@@ -12,10 +12,6 @@ const stations = stationsFilter.map(station => {
     }
 });
 
-// get and format date for NOAA API
-const now = new Date()
-const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${String((now.getDate())).padStart(2, "0")}`;
-
 // this endpoint should be hit by GetCoords
 app.http('GetTides', {
     methods: ['GET'],
@@ -44,7 +40,7 @@ app.http('GetTides', {
 
         // fetch the geocode api
         try {
-            const geocodeApiUrl = `https://geocode.maps.co/search?q=${queryLocation}&countrycodes=us`;
+            const geocodeApiUrl = `https://geocode.maps.co/search?q=${encodeURIComponent(queryLocation)}&countrycodes=us`;
             const geocodeRes =  await fetch(geocodeApiUrl, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}` // add API key in the headers for security
@@ -59,8 +55,8 @@ app.http('GetTides', {
             geocodeData = await geocodeRes.json();
             geocodeData = geocodeData[0];
 
-            // if data is null or empty return 404
-            if (!geocodeData || geocodeData.length === 0) {
+            // if data is null return 404
+            if (!geocodeData) {
                 return {
                     status: 404,
                     headers: {
@@ -86,8 +82,13 @@ app.http('GetTides', {
         try {
             const closestStationId = getClosestStation({lat: geocodeData.lat, lng: geocodeData.lon}).id;
 
-            const tidesApiUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
+            const tidesApiUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&date=today&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
             const tidesRes = await fetch(tidesApiUrl);
+
+            if (!tidesRes.ok) {
+                throw new Error(`API responded with status: ${tidesRes.status}`);
+            }
+
             const tidesData = await tidesRes.json();
 
             // create response object

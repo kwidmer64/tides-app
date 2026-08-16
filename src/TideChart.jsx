@@ -23,12 +23,12 @@ function TideChart({tideDay, formattedTime, time}) {
     return(
         <ResponsiveContainer width="100%" height="100%">
             <AreaChart width={600} height={300} data={tideData}>
-                <def>
+                <defs>
                     <linearGradient id="colorHeight" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8}/>
                         <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                     </linearGradient>
-                </def>
+                </defs>
                 <Area dataKey="v" dot={false} type="monotone" stroke="#0ea5e9" strokeWidth={4} fill="url(#colorHeight)" baseValue="dataMin"/>
                 <XAxis
                     type="number"
@@ -46,7 +46,7 @@ function TideChart({tideDay, formattedTime, time}) {
                     axisLine={false}
                 />
                 <CartesianGrid vertical={true} horizontal={false} />
-                <ReferenceLine x={`${time}`} stroke="#9a3412" isFront={true} strokeWidth={5}>
+                <ReferenceLine x={time} stroke="#9a3412" isFront={true} strokeWidth={5}>
                     <Label value={`${formattedTime}`} position="insideBottomLeft" fill="#9a3412"/>
                 </ReferenceLine>
                 {/*<Tooltip />*/}
