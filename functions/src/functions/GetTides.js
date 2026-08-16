@@ -12,10 +12,6 @@ const stations = stationsFilter.map(station => {
     }
 });
 
-// get and format date for NOAA API
-const now = new Date()
-const formattedDate = `${now.getFullYear()}${String((now.getMonth() + 1)).padStart(2, "0")}${String((now.getDate())).padStart(2, "0")}`;
-
 // this endpoint should be hit by GetCoords
 app.http('GetTides', {
     methods: ['GET'],
@@ -86,8 +82,13 @@ app.http('GetTides', {
         try {
             const closestStationId = getClosestStation({lat: geocodeData.lat, lng: geocodeData.lon}).id;
 
-            const tidesApiUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&begin_date=${formattedDate}&end_date=${formattedDate}&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
+            const tidesApiUrl = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=${closestStationId}&product=predictions&date=today&datum=MLLW&units=metric&time_zone=lst_ldt&format=json`;
             const tidesRes = await fetch(tidesApiUrl);
+
+            if (!tidesRes.ok) {
+                throw new Error(`API responded with status: ${tidesRes.status}`);
+            }
+
             const tidesData = await tidesRes.json();
 
             // create response object
