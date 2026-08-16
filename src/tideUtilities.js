@@ -33,6 +33,27 @@ function formatData(data) {
         }
     }
 
+    // classify the first/last points directionally (rising/falling only) using their single
+    // available neighbor - we can't verify a true high/low turning point at the edge of the
+    // fetched day without a data point from before/after the window
+    if (formattedData.length > 1) {
+        const lastIdx = formattedData.length - 1;
+
+        const firstCurr = parseFloat(formattedData[0].v);
+        const firstNext = parseFloat(formattedData[1].v);
+        formattedData[0] = {
+            ...formattedData[0],
+            tideStatus: firstCurr < firstNext ? 1 : -1
+        }
+
+        const lastCurr = parseFloat(formattedData[lastIdx].v);
+        const lastPrev = parseFloat(formattedData[lastIdx - 1].v);
+        formattedData[lastIdx] = {
+            ...formattedData[lastIdx],
+            tideStatus: lastCurr > lastPrev ? 1 : -1
+        }
+    }
+
     return formattedData;
 }
 
