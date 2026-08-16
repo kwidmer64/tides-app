@@ -44,7 +44,7 @@ app.http('GetTides', {
 
         // fetch the geocode api
         try {
-            const geocodeApiUrl = `https://geocode.maps.co/search?q=${queryLocation}&countrycodes=us`;
+            const geocodeApiUrl = `https://geocode.maps.co/search?q=${encodeURIComponent(queryLocation)}&countrycodes=us`;
             const geocodeRes =  await fetch(geocodeApiUrl, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}` // add API key in the headers for security
@@ -59,8 +59,8 @@ app.http('GetTides', {
             geocodeData = await geocodeRes.json();
             geocodeData = geocodeData[0];
 
-            // if data is null or empty return 404
-            if (!geocodeData || geocodeData.length === 0) {
+            // if data is null return 404
+            if (!geocodeData) {
                 return {
                     status: 404,
                     headers: {
