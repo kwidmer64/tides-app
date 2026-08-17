@@ -5,12 +5,13 @@
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
-    "test": "echo \"No tests yet...\""
+    "test": "jest"
   },
   "dependencies": {
     "@azure/functions": "^4.0.0"
   },
   "devDependencies": {
-    "azure-functions-core-tools": "^4.x"
+    "azure-functions-core-tools": "^4.x",
+    "jest": "^29.7.0"
   }
 }
