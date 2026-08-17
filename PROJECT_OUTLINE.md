@@ -10,7 +10,7 @@ Web app: enter a US location, see today's tide curve + current tide status. Desi
 
 - Frontend: React 19, Vite 7, Tailwind CSS v4, Recharts. Deployed as Azure Static Web App.
 - Backend: single Azure Function (`GetTides`), Node, Azure Functions v4 programming model. Deployed as the SWA's managed API.
-- No database. No auth. No tests currently.
+- No database. No auth. Tests: Vitest for `src/` + Jest for `functions/`, both runnable from root via `npm test` (see `CLAUDE.md`).
 - CI/CD: `.github/workflows/azure-static-web-apps-proud-rock-07574100f.yml` — auto-builds and deploys on push to `master` and on PRs (also tears down PR preview envs on close).
 
 ## File map
@@ -52,5 +52,24 @@ functions/
 
 - `stations.js` is large (~19k lines) and `require`'d whole into the function at cold start; filtering to `tidal: true` happens at module load, not per-request.
 - Distance calc in `getClosestStation` is planar, not geodesic — acceptable given NOAA station density but worth remembering if accuracy work comes up.
-- Tide direction/turning-point logic in `tideUtilities.js` is a simple 3-point neighbor comparison, not a real extrema/interpolation algorithm — edge points (idx 0 and last) never get a `tideStatus` classification.
+- Tide direction/turning-point logic in `tideUtilities.js` is a simple 3-point neighbor comparison, not a real extrema/interpolation algorithm. First/last points are classified directionally (rising/falling) only — a boundary point can't be verified as a true high/low turning point without a data point from before/after the fetched day.
 - No `staticwebapp.config.json` currently in the repo — routing/rewrite behavior relies on SWA defaults (co-located `functions/` folder as the API).
+
+## Deferred improvements (not yet done)
+
+A full line-by-line review surfaced these. The correctness bugs from that review are already fixed (see git history: `fix/tide-app-real-bugs`); these are the remaining items that were explicitly deferred as lower-priority/style rather than broken behavior. Picking any of these up is a reasonable way to start a future session.
+
+**Security / robustness:**
+- `src/App.jsx`'s data-fetch `useEffect` has no `AbortController` — rapid resubmission (double-clicking "Go" or submitting twice quickly) races two in-flight requests with no cancellation; whichever resolves last wins, even if it's the stale one.
+- `functions/src/functions/GetTides.js`'s `GetTides` endpoint has no throttling or auth in front of it — anyone can call `/api/GetTides` directly, bypassing the UI, and burn through the `GEO_API_KEY` quota.
+- Both catch blocks in `GetTides.js` (geocode fetch failure and NOAA fetch failure) return `err.message` straight to the client in the response body — leaks internal error detail instead of logging server-side and returning a generic message.
+
+**Code quality / standards:**
+- No TypeScript or PropTypes anywhere in `src/` — an app this data-shape-heavy (NOAA payload → derived chart data) would benefit from typed boundaries, especially now that there's a test suite pinning current shapes.
+- `functions/package.json` — `name` and `description` fields are empty; minor npm/package hygiene gap.
+- `tides-app.iml` (a JetBrains project file) is tracked in git at the repo root — personal IDE artifact that shouldn't be committed; `.idea/` is already gitignored but this one file predates that rule.
+- `getClosestStation` (`GetTides.js`) uses flat Euclidean distance on raw lat/lng degrees — no `cos(lat)` longitude correction or haversine formula. Gets less accurate further from the equator (matters most for northern coastal stations, e.g. Alaska).
+
+**Accessibility:**
+- `LocationForm.jsx`'s location input has no real `<label>` — a commented-out one exists but isn't wired up (`htmlFor`/`aria-label`); placeholder-only text doesn't satisfy WCAG labeling requirements.
+- The submit button gives no loading/disabled visual state while a fetch is in flight — the only feedback is the whole page swapping to "Loading..." once state updates land.

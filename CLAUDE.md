@@ -16,9 +16,12 @@ Frontend (run from repo root):
 
 API (run from `functions/`):
 - `npm start` (or `func start`) — run the Azure Function locally via Azure Functions Core Tools, listening on port 7071
-- No test suite exists yet (`npm test` is a placeholder).
+- `npm test` — Jest suite for `GetTides.js` (`functions/test/GetTides.test.js`)
 
-There is no root-level test command — this project currently has no automated tests.
+Tests (run from repo root):
+- `npm test` — runs the full suite: frontend (Vitest) then backend (delegates to `functions/`'s Jest suite)
+- `npm run test:frontend` — Vitest only (`src/**/*.test.{js,jsx}`); `npm run test:frontend:watch` for watch mode
+- `npm run test:backend` — backend Jest suite only, equivalent to running `npm test` inside `functions/`
 
 ## Architecture
 
