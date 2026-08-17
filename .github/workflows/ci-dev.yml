@@ -1,0 +1,29 @@
+name: CI (dev)
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install API dependencies
+        run: npm --prefix functions ci
+
+      - name: Run full test suite
+        run: npm test
