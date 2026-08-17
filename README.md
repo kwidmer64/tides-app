@@ -7,24 +7,29 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
 
 ## ⚠️ Known Issues & Limitations
 
-- **Error handling is limited**  
-  - When any invalid input is entered, the app defaults to Nawiliwili, HI, and the displayed location does not change.  
-
 - **Location restrictions**  
   - The app can only display **US tide data**, as it relies on the NOAA Tides & Currents API.  
-  - Inland cities (e.g., Denver, CO) will show tides for the closest coastal station.  
+  - Inland cities (e.g., Denver, CO) will show tides for the closest coastal station, which can be far off.
 
-- **Input limitations**  
-  - Most input limitations have been fixed as of 2025-12-16
- 
 - **Display issues**  
-  - Pressing `Go` without changing location value will change the displayed location to `Loading...` until a new value is entered
-  - The app assumes the user is in the same time zone as the specified location, which can lead to incorrect data being displayed
+  - Submitting the same location again leaves the display stuck on `Loading...`, since no new data fetch is triggered.
+  - Tide predictions are fetched for the queried location's correct local day, but the frontend still assumes the viewer's own clock matches that location's timezone when determining the current tide status shown on screen.
+
+Invalid or empty input, and failed data fetches, now show an inline error message instead of hanging or silently falling back to a default location.
+
+---
+
+## 🧪 Testing
+
+- `npm test` (repo root) — runs the full suite: frontend (Vitest) then backend (Jest).
+- `npm run test:frontend` / `npm run test:backend` — run either suite on its own.
 
 ---
 
 ## ✅ To Do
 
-- Improve error handling and provide user-friendly messages.  
-- Restrict inputs to valid US coastal locations only.  
-- Prevent inland ~~or non-US~~ locations from being entered.  
+- Add a list of hourly tide heights and statuses below the chart.
+- Add the ability to drag over the chart to see the height and status at any point in the day.
+- Improve the accuracy of tide readings.
+- Restrict location input to coastal locations/areas that actually have tide data.
+- Add support for international locations (would need a non-NOAA data source).
