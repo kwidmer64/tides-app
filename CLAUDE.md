@@ -58,6 +58,7 @@ Two-branch flow: `dev` is the integration branch, `master` is the release branch
 - `.github/workflows/pr-title-lint.yml` enforces the Conventional Commits title format on PRs into both `dev` and `master`.
 - `functions/package.json`'s `version` field is inert and not part of this system — there is one app-wide version, in the root `package.json`.
 - Nothing in this pipeline publishes to the npm registry — `@semantic-release/npm` is configured with `npmPublish: false` and is used solely to keep `package.json`'s version field in sync with the git tag.
+- `master` has branch protection requiring the `Test` status check. Because of that, `release.yml` authenticates with a `RELEASE_TOKEN` secret (a PAT belonging to a repo admin) instead of the default `GITHUB_TOKEN` — the bot token can't push straight to a protected branch, and the release commit `@semantic-release/git` creates is always a brand-new, not-yet-checked commit. Using a PAT also means GitHub's automatic "don't re-trigger workflows from `GITHUB_TOKEN` pushes" protection no longer applies to this job's pushes — the loop guard is instead the `[skip ci]` in the release commit message (`.releaserc.json`'s git plugin config), which GitHub honors regardless of which token pushed it.
 
 ## Known limitations (from README)
 
