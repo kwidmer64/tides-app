@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Install API dependencies
-        run: npm --prefix functions ci
+        run: npm --prefix functions ci --ignore-scripts
 
       - name: Run full test suite
         run: npm test
