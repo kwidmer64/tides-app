@@ -48,7 +48,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          git fetch origin dev
+          git fetch origin master dev
           git switch dev
           git merge origin/master --no-edit
           git push origin dev
