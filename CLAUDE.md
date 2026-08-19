@@ -48,7 +48,9 @@ On the frontend, `src/tideUtilities.js` turns the raw NOAA prediction series int
 
 ## Versioning & releases
 
-Two-branch flow: `dev` is the integration branch, `master` is the release branch (also the SWA deploy source). Only `dev` → `master` promotion actually cuts a release.
+Two-branch flow: `dev` is the integration branch, `master` is the release branch (also the SWA deploy source). Only `dev` → `master` promotion actually cuts a release. Version is [SemVer](https://semver.org/), automated end-to-end by [semantic-release](https://semantic-release.gitbook.io/) — nobody hand-edits `package.json`'s version or writes `CHANGELOG.md` entries.
+
+### Day-to-day flow
 
 - **Branch prefixes**: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/`, `ci/` — branch off `dev`, not `master`.
 - **Commit/PR title format**: [Conventional Commits](https://www.conventionalcommits.org/) — `type(scope?): subject`. Bump mapping: `fix:` → patch, `feat:` → minor, `!` after the type or a `BREAKING CHANGE:` footer → major. Types with no release effect (`chore:`, `docs:`, `test:`, `ci:`, etc.) still lint but don't bump.
@@ -58,7 +60,17 @@ Two-branch flow: `dev` is the integration branch, `master` is the release branch
 - `.github/workflows/pr-title-lint.yml` enforces the Conventional Commits title format on PRs into both `dev` and `master`.
 - `functions/package.json`'s `version` field is inert and not part of this system — there is one app-wide version, in the root `package.json`.
 - Nothing in this pipeline publishes to the npm registry — `@semantic-release/npm` is configured with `npmPublish: false` and is used solely to keep `package.json`'s version field in sync with the git tag.
-- `master` has branch protection requiring the `Test` status check. Because of that, `release.yml` authenticates with a `RELEASE_TOKEN` secret (a PAT belonging to a repo admin) instead of the default `GITHUB_TOKEN` — the bot token can't push straight to a protected branch, and the release commit `@semantic-release/git` creates is always a brand-new, not-yet-checked commit. Using a PAT also means GitHub's automatic "don't re-trigger workflows from `GITHUB_TOKEN` pushes" protection no longer applies to this job's pushes — the loop guard is instead the `[skip ci]` in the release commit message (`.releaserc.json`'s git plugin config), which GitHub honors regardless of which token pushed it.
+
+### Bootstrapping
+
+History before this system predates Conventional Commits, so semantic-release had no commits to compute an initial version from. `v1.0.0` was seeded manually (tag pushed by hand on the pre-tooling `master` tip, `package.json` set to `1.0.0` in the same PR that added the tooling) — this is the only manual version/tag in the repo's history; every release since is computed.
+
+### Implementation gotchas (don't reintroduce these)
+
+- **Node version floor**: `semantic-release` v25 requires Node `^22.14.0 || >=24.10.0`. Both `ci.yml` and `release.yml` pin `node-version: 22` — dropping to Node 20 makes `release.yml` fail immediately at the `npx semantic-release` step.
+- **`--ignore-scripts` on the functions install**: `npm --prefix functions ci` runs with `--ignore-scripts` in both CI workflows. Without it, `azure-functions-core-tools`' postinstall downloads its CLI binary from `cdn.functions.azure.com` — unused by the test suite (Jest runs against a mocked functions runtime, no `func start` involved) and a source of CI failures whenever that CDN has a hiccup.
+- **`master`'s branch protection requires the `Test` status check** on every push, not just PR merges — including the version-bump commit `@semantic-release/git` pushes directly. The default `GITHUB_TOKEN` can't bypass that, so `release.yml` authenticates with a `RELEASE_TOKEN` secret (a PAT belonging to a repo admin) instead. Using a PAT also means GitHub's automatic "don't re-trigger workflows from `GITHUB_TOKEN` pushes" exclusion no longer applies to this job's pushes — the loop guard is instead the `[skip ci]` in the release commit message (`.releaserc.json`'s git plugin `message` template), which GitHub honors regardless of which token pushed it.
+- **The dev-sync step must re-fetch `master`, not just `dev`**: `@semantic-release/git` pushes with `git push --tags <explicit-URL> HEAD:master` rather than `git push origin ...`, so it does **not** update the local `refs/remotes/origin/master` tracking ref. The final "sync release commit back to dev" step therefore runs `git fetch origin master dev` (both, explicitly) before merging — fetching only `dev` merges a stale pre-release `origin/master` ref, and `dev` silently ends up one commit behind `master` (missing the version bump) after every release.
 
 ## Known limitations (from README)
 
