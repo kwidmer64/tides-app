@@ -1,100 +1,75 @@
+// how close to a turning point still counts as "high tide" rather than a direction.
+// Without a window the label would only be true for the single instant NOAA names,
+// so nobody would ever see it.
+const HIGH_LOW_WINDOW_MINUTES = 15;
+
+// high tide = 2, rising = 1, falling = -1, low tide = -2
+const HIGH = 2;
+const RISING = 1;
+const FALLING = -1;
+const LOW = -2;
+
+const toMinutes = (t) => {
+    const [hours, minutes] = t.split(':').map(Number);
+    return hours * 60 + minutes;
+};
+
+// trims NOAA's "YYYY-MM-DD HH:MM" down to "HH:MM", leaving every other field
+// alone so this works on the 6-minute series and on the high/low extremes alike
 function formatData(data) {
-    // format the data int ocorrect HH:MM format
-    const formattedData = data.map((measurement) => {
-        return {
-            t: measurement.t.slice(11,16),
-            v: measurement.v
-        }
-    });
-
-    // calculate rising/falling tide
-    // rising = 1, falling = -1, high tide = 2, low tide = -2
-    for (let idx = 1; idx < formattedData.length - 1; idx++) {
-        const prev = parseFloat(formattedData[idx - 1].v);
-        const curr = parseFloat(formattedData[idx].v);
-        const next = parseFloat(formattedData[idx + 1].v);
-
-        let tideStatus = 0;
-
-        if (curr >= prev && curr >= next) {
-            tideStatus = 2;
-        } else if (curr <= prev && curr <= next) {
-            tideStatus = -2;
-        } else if (curr > prev) {
-            tideStatus = 1;
-        } else {
-            tideStatus = -1;
-        }
-
-        // create new data object with new tide status
-        formattedData[idx] = {
-            ...formattedData[idx],
-            tideStatus: tideStatus
-        }
-    }
-
-    // classify the first/last points directionally (rising/falling only) using their single
-    // available neighbor - we can't verify a true high/low turning point at the edge of the
-    // fetched day without a data point from before/after the window
-    if (formattedData.length > 1) {
-        const lastIdx = formattedData.length - 1;
-
-        const firstCurr = parseFloat(formattedData[0].v);
-        const firstNext = parseFloat(formattedData[1].v);
-        formattedData[0] = {
-            ...formattedData[0],
-            tideStatus: firstCurr < firstNext ? 1 : -1
-        }
-
-        const lastCurr = parseFloat(formattedData[lastIdx].v);
-        const lastPrev = parseFloat(formattedData[lastIdx - 1].v);
-        formattedData[lastIdx] = {
-            ...formattedData[lastIdx],
-            tideStatus: lastCurr > lastPrev ? 1 : -1
-        }
-    }
-
-    return formattedData;
+    return data.map((measurement) => ({
+        ...measurement,
+        t: measurement.t.slice(11, 16)
+    }));
 }
 
-// use the reduce function to find the closest data point to the current time
+// the reading nearest a given time. Times outside the day clamp to its ends.
+function getMeasurementAt(data, time) {
+    return data.reduce((closest, measurement) => (
+        Math.abs(toMinutes(measurement.t) - time) < Math.abs(toMinutes(closest.t) - time)
+            ? measurement
+            : closest
+    ));
+}
+
 function getCurrentTideMeasurement(data, time) {
-    return data.reduce((prevMeasurement, currMeasurement) => {
-        // parse time from current data object into hours and minutes
-        const [currDataHours, currDataMinutes] = currMeasurement.t.split(":").map(Number);
-        // convert hours and minutes into minutes from 12
-        const currDataTime = currDataHours * 60 + currDataMinutes;
-
-        // parse time from previous data object into hours and minutes
-        const [prevDataHours, prevDataMinutes] = prevMeasurement.t.split(":").map(Number);
-        // convert hours and minutes into minutes from 12
-        const prevDataTime = prevDataHours * 60 + prevDataMinutes;
-
-        return Math.abs(currDataTime - time) < Math.abs(prevDataTime - time) ? currMeasurement : prevMeasurement;
-    });
+    return getMeasurementAt(data, time);
 }
 
-// calculates the lowest and highest points for the day, as well as the first and last measurement of the day
-function getDayTideCycle(data) {
-    let tide = [];
-    // get the first element in the data array (this will be closest to 00:00)
-    tide.push(data[0]);
-    // get the highest and lowest points for the day
-    for (let idx = 1; idx < data.length - 1; idx++) {
-        const prev = parseFloat(data[idx - 1].v);
-        const curr = parseFloat(data[idx].v);
-        const next = parseFloat(data[idx + 1].v);
-
-        if (curr > prev && curr >= next) {
-            tide.push(data[idx])
-        } else if (curr < prev && curr <= next) {
-            tide.push(data[idx])
-        }
+// what the tide is doing at a given time, judged against NOAA's own turning
+// points rather than against neighbouring samples. Takes an arbitrary time so
+// the same call answers "now" and "wherever the pointer is".
+function getTideStatusAt(time, extremes) {
+    if (!extremes || extremes.length === 0) {
+        return 0;
     }
-    // get the last element in the data array (this will be closest to 23:59)
-    tide.push(data[data.length - 1]);
 
-    return tide;
+    const points = extremes
+        .map((extreme) => ({ minutes: toMinutes(extreme.t), type: extreme.type }))
+        .sort((a, b) => a.minutes - b.minutes);
+
+    const nearest = points.reduce((closest, point) => (
+        Math.abs(point.minutes - time) < Math.abs(closest.minutes - time) ? point : closest
+    ));
+
+    if (Math.abs(nearest.minutes - time) <= HIGH_LOW_WINDOW_MINUTES) {
+        return nearest.type === 'H' ? HIGH : LOW;
+    }
+
+    // otherwise the tide is travelling toward the next turning point. Past the
+    // last one of the day it keeps going the only way it can - away from it.
+    const next = points.find((point) => point.minutes > time);
+    if (next) {
+        return next.type === 'H' ? RISING : FALLING;
+    }
+
+    return points[points.length - 1].type === 'H' ? FALLING : RISING;
 }
 
-export { formatData, getCurrentTideMeasurement, getDayTideCycle };
+export {
+    formatData,
+    getMeasurementAt,
+    getCurrentTideMeasurement,
+    getTideStatusAt,
+    HIGH_LOW_WINDOW_MINUTES
+};

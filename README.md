@@ -9,7 +9,9 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
 
 - **Location restrictions**  
   - The app can only display **US tide data**, as it relies on the NOAA Tides & Currents API.  
-  - Inland cities (e.g., Denver, CO) will show tides for the closest coastal station, which can be far off.
+  - Locations with no tide station within 100 km (e.g., Denver, CO, or anywhere on the Great Lakes) return a message naming the nearest station and its distance, rather than a chart of water hundreds of miles away.
+  - The nearest station is not always the most representative one. Sheltered stations inside inlets and bays report a smaller tidal range than the open coast a few miles away, so a beach query can resolve to a station whose range is noticeably damped.
+  - Hartford, CT is tidal on the Connecticut River but its nearest reference station is on the coast.
 
 - **Display issues**  
   - Tide predictions are fetched for the queried location's correct local day, but the frontend still assumes the viewer's own clock matches that location's timezone when determining the current tide status shown on screen.
@@ -29,6 +31,4 @@ Invalid or empty input, and failed data fetches, now show an inline error messag
 
 - Add a list of hourly tide heights and statuses below the chart.
 - Add the ability to drag over the chart to see the height and status at any point in the day.
-- Improve the accuracy of tide readings.
-- Restrict location input to coastal locations/areas that actually have tide data.
 - Add support for international locations (would need a non-NOAA data source).

@@ -2,23 +2,26 @@ import {
     ResponsiveContainer,
     XAxis,
     ReferenceLine,
+    ReferenceDot,
     CartesianGrid,
     AreaChart,
     Area, Label
 } from 'recharts';
 
+const toMinutes = (t) => {
+    const [hours, minutes] = t.split(":").map(Number);
+    return hours * 60 + minutes;
+};
+
 // Create chart element
-function TideChart({tideDay, formattedTime, time}) {
-    // Takes the fullTide data (highs and lows plus first reading and last reading)
-    // calculates minutes as minutes since 12AM for tick display
-    const tideData = tideDay.map(data => {
-        const [hours, minutes] = data.t.split(":").map(Number);
-        return {
-            ...data,
-            minutes: hours * 60 + minutes, // numeric value as minutes since 12AM
-            time: data.t.slice(11, 16) // format to HH:MM
-        };
-    });
+function TideChart({series, extremes, formattedTime, time}) {
+    // the curve is the full prediction series, so every point on it is measured
+    // rather than interpolated between turning points
+    const tideData = series.map(measurement => ({
+        ...measurement,
+        minutes: toMinutes(measurement.t),
+        v: Number(measurement.v)
+    }));
 
     return(
         <ResponsiveContainer width="100%" height="100%">
@@ -46,10 +49,29 @@ function TideChart({tideDay, formattedTime, time}) {
                     axisLine={false}
                 />
                 <CartesianGrid vertical={true} horizontal={false} />
+                {/* NOAA's own turning points, which fall between samples rather than on them */}
+                {extremes.map(extreme => (
+                    <ReferenceDot
+                        key={`${extreme.t}-${extreme.type}`}
+                        x={toMinutes(extreme.t)}
+                        y={Number(extreme.v)}
+                        r={4}
+                        fill="#0ea5e9"
+                        stroke="#18181b"
+                        strokeWidth={2}
+                        isFront={true}
+                    >
+                        <Label
+                            value={Number(extreme.v).toFixed(2)}
+                            position={extreme.type === 'H' ? 'top' : 'bottom'}
+                            fill="#a1a1aa"
+                            fontSize={12}
+                        />
+                    </ReferenceDot>
+                ))}
                 <ReferenceLine x={time} stroke="#9a3412" isFront={true} strokeWidth={5}>
                     <Label value={`${formattedTime}`} position="insideBottomLeft" fill="#9a3412"/>
                 </ReferenceLine>
-                {/*<Tooltip />*/}
             </AreaChart>
         </ResponsiveContainer>
     );
