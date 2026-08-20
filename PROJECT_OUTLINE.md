@@ -63,5 +63,3 @@ A full line-by-line review surfaced these. The correctness bugs from that review
 
 **Code quality / standards:**
 - No TypeScript or PropTypes anywhere in `src/` — an app this data-shape-heavy (NOAA payload → derived chart data) would benefit from typed boundaries, especially now that there's a test suite pinning current shapes.
-- `functions/package.json` — `name` and `description` fields are empty; minor npm/package hygiene gap.
-- `tides-app.iml` (a JetBrains project file) is tracked in git at the repo root — personal IDE artifact that shouldn't be committed; `.idea/` is already gitignored but this one file predates that rule.
