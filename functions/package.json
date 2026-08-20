@@ -1,7 +1,7 @@
 {
-  "name": "",
+  "name": "tides-app-functions",
   "version": "1.0.0",
-  "description": "",
+  "description": "Azure Functions API for the tides app: geocodes a location, finds the nearest NOAA tide station, and returns its predictions for the day",
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
