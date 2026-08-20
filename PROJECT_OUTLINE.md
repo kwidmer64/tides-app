@@ -41,11 +41,11 @@ functions/
    - Returns `{ name, displayName, address, predictions }`.
 5. Frontend derives current reading + today's high/low turning points (`tideUtilities.js`) and renders the chart + status pill.
 
-## Known limitations / open issues (see README for canonical list)
+## Known limitations / open issues
 
-- Bad input silently falls back to Nawiliwili, HI without telling the user.
-- Coastal-station-only coverage; inland queries resolve to nearest coast, sometimes far away.
-- No real timezone handling — assumes viewer and location share a timezone.
+Canonical list is `README.md`'s "Known Issues & Limitations" — go read it there. This section used to restate it and drifted out of date as the bugs got fixed, so it now only points.
+
+Code-facing shape of it: coverage is NOAA-station-only (inland queries resolve to the nearest coast, sometimes far away), and the frontend derives the current reading from the viewer's clock rather than the queried location's timezone.
 
 ## Things to know before touching code
 

@@ -72,9 +72,8 @@ History before this system predates Conventional Commits, so semantic-release ha
 - **`master`'s branch protection requires the `Test` status check** on every push, not just PR merges — including the version-bump commit `@semantic-release/git` pushes directly. The default `GITHUB_TOKEN` can't bypass that, so `release.yml` authenticates with a `RELEASE_TOKEN` secret (a PAT belonging to a repo admin) instead. Using a PAT also means GitHub's automatic "don't re-trigger workflows from `GITHUB_TOKEN` pushes" exclusion no longer applies to this job's pushes — the loop guard is instead the `[skip ci]` in the release commit message (`.releaserc.json`'s git plugin `message` template), which GitHub honors regardless of which token pushed it.
 - **The dev-sync step must re-fetch `master`, not just `dev`**: `@semantic-release/git` pushes with `git push --tags <explicit-URL> HEAD:master` rather than `git push origin ...`, so it does **not** update the local `refs/remotes/origin/master` tracking ref. The final "sync release commit back to dev" step therefore runs `git fetch origin master dev` (both, explicitly) before merging — fetching only `dev` merges a stale pre-release `origin/master` ref, and `dev` silently ends up one commit behind `master` (missing the version bump) after every release.
 
-## Known limitations (from README)
+## Known limitations
 
-- Invalid input silently falls back to the default station (Nawiliwili, HI) without updating the displayed location.
-- US-only, NOAA-station-based — inland locations resolve to the nearest coastal station, which can be far off.
-- No timezone handling: predictions are assumed to be in the viewer's local timezone, not the queried location's.
-- Submitting the form without changing the input shows "Loading..." indefinitely until a new value is entered.
+`README.md`'s "Known Issues & Limitations" is the canonical list. Read it there — this file used to paraphrase it and went stale, describing bugs that had already been fixed.
+
+The one worth knowing before touching `src/`: predictions are fetched for the queried location's own local day, but `App.jsx` picks the "current" reading using the viewer's clock (`new Date()`), with no offset for where the location actually is. Any work on the current-tide status has to reckon with that mismatch.
