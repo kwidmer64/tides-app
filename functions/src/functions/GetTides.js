@@ -121,22 +121,35 @@ app.http('GetTides', {
 
 // function to calculate the closest station to the input coordinates
 function getClosestStation(coords, stationList) {
+    const EARTH_RADIUS_KM = 6371;
+
+    // great-circle distance in km. a degree of longitude covers less ground the
+    // further you get from the equator, so comparing raw lat/lng degrees picks
+    // the wrong station at northern latitudes. Number() because the geocode API
+    // hands back coordinates as strings.
     function calcDistance(lat1, lon1, lat2, lon2) {
-        return Math.sqrt((lat2 - lat1)**2 + (lon2 - lon1)**2);
+        const toRadians = degrees => Number(degrees) * Math.PI / 180;
+
+        const lat1Rad = toRadians(lat1);
+        const lat2Rad = toRadians(lat2);
+        const deltaLat = lat2Rad - lat1Rad;
+        const deltaLon = toRadians(lon2) - toRadians(lon1);
+
+        const a = Math.sin(deltaLat / 2)**2
+            + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(deltaLon / 2)**2;
+
+        return EARTH_RADIUS_KM * 2 * Math.asin(Math.sqrt(a));
     }
 
-    const station = stationList.reduce((prev, curr) => {
-        const currDistance = calcDistance(coords.lat, coords.lng, curr.lat, curr.lng);
-        const prevDistance = calcDistance(coords.lat, coords.lng, prev.lat, prev.lng);
+    // carry the running best distance rather than recomputing it for the incumbent
+    // on every step - this runs across the whole tidal station list per request
+    const closest = stationList.reduce((best, station) => {
+        const distance = calcDistance(coords.lat, coords.lng, station.lat, station.lng);
 
-        if (currDistance < prevDistance) {
-            return curr;
-        } else {
-            return prev
-        }
-    });
+        return distance < best.distance ? { station, distance } : best;
+    }, { station: stationList[0], distance: Infinity });
 
-    return station;
+    return closest.station;
 }
 
 module.exports = { handler, getClosestStation };
