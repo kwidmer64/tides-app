@@ -19,9 +19,13 @@ function App() {
     // gets the closest station Id
     // then fetches tides
     useEffect(() => {
+        const controller = new AbortController();
+
         // function that returns predictions data
         const fetchTidesData = async () => {
-            const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`);
+            const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`, {
+                signal: controller.signal
+            });
             if (!predictionsRes.ok) {
                 throw new Error(`GetTides request failed with status: ${predictionsRes.status}`);
             }
@@ -47,9 +51,12 @@ function App() {
                 setFullDisplayLocation(predictionsData.displayName || "");
             }
         }).catch(err => {
+            if (err.name === 'AbortError') return;
             console.error(err);
             setFetchError("Couldn't load tide data for that location. Try again.");
         });
+
+        return () => controller.abort();
     }, [location]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
