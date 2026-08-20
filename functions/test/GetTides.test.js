@@ -70,6 +70,19 @@ describe('getClosestStation', () => {
         expect(forward.id).toBe('C');
         expect(reversed.id).toBe('C');
     });
+
+    test('measures real distance, not raw degrees, at high latitude', () => {
+        // at 60 degrees north a degree of longitude covers about half the ground
+        // a degree of latitude does, so the closer station is the one more degrees away
+        const highLatStations = [
+            { id: 'EAST', lat: 60, lng: 1.8 },  // ~100 km away, but 1.8 degrees
+            { id: 'NORTH', lat: 61.5, lng: 0 }  // ~167 km away, but only 1.5 degrees
+        ];
+
+        const closest = getClosestStation({ lat: 60, lng: 0 }, highLatStations);
+
+        expect(closest.id).toBe('EAST');
+    });
 });
 
 describe('GetTides handler', () => {

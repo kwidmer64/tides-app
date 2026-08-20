@@ -36,7 +36,7 @@ functions/
 3. Locally, Vite proxies `/api` to `http://localhost:7071` (Functions Core Tools). In prod, SWA routes `/api` to the Function app directly.
 4. `GetTides.js`:
    - Geocodes via `geocode.maps.co` (needs `GEO_API_KEY` env var / `functions/local.settings.json` locally).
-   - Finds nearest station by simple Euclidean lat/lng distance (no great-circle math — fine at this scale, not precise).
+   - Finds nearest station by great-circle (haversine) distance over the tidal station list.
    - Pulls today's predictions from NOAA CO-OPS API (`datagetter`), 6-min interval, metric, local station time.
    - Returns `{ name, displayName, address, predictions }`.
 5. Frontend derives current reading + today's high/low turning points (`tideUtilities.js`) and renders the chart + status pill.
@@ -50,7 +50,7 @@ Code-facing shape of it: coverage is NOAA-station-only (inland queries resolve t
 ## Things to know before touching code
 
 - `stations.js` is large (~19k lines) and `require`'d whole into the function at cold start; filtering to `tidal: true` happens at module load, not per-request.
-- Distance calc in `getClosestStation` is planar, not geodesic — acceptable given NOAA station density but worth remembering if accuracy work comes up.
+- `getClosestStation` uses haversine distance, so station selection is correct at any latitude. It still only picks the nearest station — it makes no judgement about whether that station is actually relevant to the query (see the inland-location limitation).
 - Tide direction/turning-point logic in `tideUtilities.js` is a simple 3-point neighbor comparison, not a real extrema/interpolation algorithm. First/last points are classified directionally (rising/falling) only — a boundary point can't be verified as a true high/low turning point without a data point from before/after the fetched day.
 - No `staticwebapp.config.json` currently in the repo — routing/rewrite behavior relies on SWA defaults (co-located `functions/` folder as the API).
 
@@ -65,4 +65,3 @@ A full line-by-line review surfaced these. The correctness bugs from that review
 - No TypeScript or PropTypes anywhere in `src/` — an app this data-shape-heavy (NOAA payload → derived chart data) would benefit from typed boundaries, especially now that there's a test suite pinning current shapes.
 - `functions/package.json` — `name` and `description` fields are empty; minor npm/package hygiene gap.
 - `tides-app.iml` (a JetBrains project file) is tracked in git at the repo root — personal IDE artifact that shouldn't be committed; `.idea/` is already gitignored but this one file predates that rule.
-- `getClosestStation` (`GetTides.js`) uses flat Euclidean distance on raw lat/lng degrees — no `cos(lat)` longitude correction or haversine formula. Gets less accurate further from the equator (matters most for northern coastal stations, e.g. Alaska).
