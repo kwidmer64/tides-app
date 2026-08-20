@@ -66,12 +66,12 @@ const handler = async (request, context) => {
             };
         }
     } catch (err) {
+        context.error(`Geocode fetch failed: ${err.message}`);
         return {
             status: 502,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                error: "Failed to fetch from geocode.maps.co",
-                details: err.message
+                error: "Failed to fetch from geocode.maps.co"
             })
         };
     }
@@ -103,12 +103,12 @@ const handler = async (request, context) => {
             body: JSON.stringify(responseJson)
         }
     } catch (err) {
+        context.error(`NOAA tides fetch failed: ${err.message}`);
         return {
             status: 502,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                error: "Failed to fetch from tides.noaa.gov",
-                details: err.message
+                error: "Failed to fetch from tides.noaa.gov"
             })
         };
     }

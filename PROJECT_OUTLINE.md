@@ -60,9 +60,7 @@ functions/
 A full line-by-line review surfaced these. The correctness bugs from that review are already fixed (see git history: `fix/tide-app-real-bugs`); these are the remaining items that were explicitly deferred as lower-priority/style rather than broken behavior. Picking any of these up is a reasonable way to start a future session.
 
 **Security / robustness:**
-- `src/App.jsx`'s data-fetch `useEffect` has no `AbortController` — rapid resubmission (double-clicking "Go" or submitting twice quickly) races two in-flight requests with no cancellation; whichever resolves last wins, even if it's the stale one.
-- `functions/src/functions/GetTides.js`'s `GetTides` endpoint has no throttling or auth in front of it — anyone can call `/api/GetTides` directly, bypassing the UI, and burn through the `GEO_API_KEY` quota.
-- Both catch blocks in `GetTides.js` (geocode fetch failure and NOAA fetch failure) return `err.message` straight to the client in the response body — leaks internal error detail instead of logging server-side and returning a generic message.
+- `functions/src/functions/GetTides.js`'s `GetTides` endpoint has no throttling or auth in front of it — anyone can call `/api/GetTides` directly, bypassing the UI, and burn through the `GEO_API_KEY` quota. **Accepted risk, not fixing for now**: confirmed via Microsoft Learn docs that managed SWA Functions (this app's setup — no `staticwebapp.config.json`, no bring-your-own-functions) aren't independently reachable at a raw Function App URL outside the SWA domain, which narrows the exposure somewhat. A real fix (per-IP/shared-store rate limiting) needs cross-instance state that isn't cheap on a Consumption plan, and this app has effectively no traffic yet — revisit if usage grows or abuse is observed.
 
 **Code quality / standards:**
 - No TypeScript or PropTypes anywhere in `src/` — an app this data-shape-heavy (NOAA payload → derived chart data) would benefit from typed boundaries, especially now that there's a test suite pinning current shapes.

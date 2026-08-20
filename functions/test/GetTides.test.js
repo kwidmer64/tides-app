@@ -10,7 +10,7 @@ function makeRequest(location) {
 }
 
 function makeContext() {
-    return { log: jest.fn() };
+    return { log: jest.fn(), error: jest.fn() };
 }
 
 function geocodeResponse({ ok = true, status = 200, results = [defaultGeocodeResult()] } = {}) {
