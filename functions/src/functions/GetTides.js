@@ -137,7 +137,7 @@ function buildPredictionsUrl(stationId, { interval } = {}) {
         product: 'predictions',
         date: 'today',
         datum: 'MLLW',
-        units: 'metric',
+        units: 'english', // feet - the UI labels heights in feet and this is a US-only app
         time_zone: 'lst_ldt',
         format: 'json'
     });

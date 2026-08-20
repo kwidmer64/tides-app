@@ -197,7 +197,9 @@ describe('GetTides handler', () => {
         const [tidesUrl] = global.fetch.mock.calls[1];
         expect(tidesUrl).toContain('product=predictions');
         expect(tidesUrl).toContain('datum=MLLW');
-        expect(tidesUrl).toContain('units=metric');
+        // the app labels heights in feet, so ask NOAA for feet rather than
+        // converting - it is a US-only app
+        expect(tidesUrl).toContain('units=english');
         expect(tidesUrl).toContain('time_zone=lst_ldt');
         expect(tidesUrl).toContain('date=today');
         expect(tidesUrl).not.toContain('begin_date');
