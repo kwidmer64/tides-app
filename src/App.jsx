@@ -10,6 +10,9 @@ function App() {
     const [displayLocation, setDisplayLocation] = useState("Surf City, New Jersey");
     const [fullDisplayLocation, setFullDisplayLocation] = useState("");
     const [fetchError, setFetchError] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    // bumped on every submit so resubmitting an unchanged location still refetches
+    const [refetchNonce, setRefetchNonce] = useState(0);
 
     const now = new Date()
     const time = now.getHours() * 60 + now.getMinutes();
@@ -19,9 +22,13 @@ function App() {
     // gets the closest station Id
     // then fetches tides
     useEffect(() => {
+        const controller = new AbortController();
+
         // function that returns predictions data
         const fetchTidesData = async () => {
-            const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`);
+            const predictionsRes = await fetch(`/api/GetTides?location=${encodeURIComponent(location)}`, {
+                signal: controller.signal
+            });
             if (!predictionsRes.ok) {
                 throw new Error(`GetTides request failed with status: ${predictionsRes.status}`);
             }
@@ -29,6 +36,7 @@ function App() {
         }
 
         setFetchError(null);
+        setIsLoading(true);
 
         fetchTidesData().then(predictionsData => {
             // set the predictions data and display location
@@ -46,11 +54,17 @@ function App() {
             } else {
                 setFullDisplayLocation(predictionsData.displayName || "");
             }
+            setIsLoading(false);
         }).catch(err => {
+            // an aborted request has been superseded - the newer one owns the loading state
+            if (err.name === 'AbortError') return;
             console.error(err);
             setFetchError("Couldn't load tide data for that location. Try again.");
+            setIsLoading(false);
         });
-    }, [location]);
+
+        return () => controller.abort();
+    }, [location, refetchNonce]);
 
     const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
         if (!data) return {};
@@ -91,18 +105,17 @@ function App() {
         return (
             <div className={" p-5 bg-zinc-900 text-amber-50 h-full"}>
                 {fetchError ? (
-                    <h2 className={"text-nowrap text-red-400 text-lg me-1"}>{fetchError}</h2>
+                    <h2 role="alert" className={"text-nowrap text-red-400 text-lg me-1"}>{fetchError}</h2>
                 ) : (
-                    <h2 className={"text-nowrap text-sky-500 text-lg me-1"}>Loading...</h2>
+                    <h2 role="status" className={"text-nowrap text-sky-500 text-lg me-1"}>Loading...</h2>
                 )}
             </div>
         )
     }
 
-    const handleFormSubmit = (data) => {
-        setLocation(data);
-        setDisplayLocation("Loading...");
-        setFullDisplayLocation("");
+    const handleFormSubmit = (value) => {
+        setLocation(value);
+        setRefetchNonce(n => n + 1);
     }
 
   return (
@@ -130,7 +143,11 @@ function App() {
           <div className={"h-40"}>
               <TideChart tideDay={tideDay} formattedTime={formattedTime} time={time}/>
           </div>
-          <LocationForm onSubmit={handleFormSubmit} />
+          <LocationForm onSubmit={handleFormSubmit} loading={isLoading} />
+          {/* the early-return error branch above only covers the first load, when there is no data yet */}
+          {fetchError && (
+              <p role="alert" className={"mt-2 text-sm text-red-400"}>{fetchError}</p>
+          )}
           {/*{displayLocation && <p className={"text-zinc-600 mt-2"}>Location</p>}*/}
           {/*{displayLocation && <h2 className={"text-nowrap text-neutral-300 text-lg me-1"}>{displayLocation}</h2>}*/}
       </div>

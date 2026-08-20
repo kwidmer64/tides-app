@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App.jsx';
 
@@ -84,5 +84,52 @@ describe('App', () => {
         expect(globalThis.fetch).toHaveBeenCalledTimes(2);
         const secondCallUrl = globalThis.fetch.mock.calls[1][0];
         expect(secondCallUrl).toContain(encodeURIComponent('Elsewhere, ZZ'));
+    });
+
+    test('resubmitting the same location still triggers a second fetch', async () => {
+        const user = userEvent.setup();
+        globalThis.fetch.mockResolvedValue(okJsonResponse(apiResponse()));
+        render(<App />);
+
+        await screen.findByText('1.50 ft');
+
+        // "Surf City, NJ" is the location the app already loaded on mount
+        await user.type(screen.getByPlaceholderText('Enter location'), 'Surf City, NJ');
+        await user.click(screen.getByRole('button', { name: 'Go' }));
+
+        await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
+    });
+
+    test('marks the submit button busy while a resubmit is in flight', async () => {
+        const user = userEvent.setup();
+        globalThis.fetch.mockResolvedValueOnce(okJsonResponse(apiResponse()));
+        render(<App />);
+
+        await screen.findByText('1.50 ft');
+        expect(screen.getByRole('button', { name: 'Go' })).toHaveAttribute('aria-busy', 'false');
+
+        globalThis.fetch.mockReturnValueOnce(new Promise(() => {})); // never resolves
+        await user.type(screen.getByPlaceholderText('Enter location'), 'Elsewhere, ZZ');
+        await user.click(screen.getByRole('button', { name: 'Go' }));
+
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Go' })).toHaveAttribute('aria-busy', 'true')
+        );
+    });
+
+    test('surfaces an error when a resubmit fails after data is already on screen', async () => {
+        const user = userEvent.setup();
+        globalThis.fetch.mockResolvedValueOnce(okJsonResponse(apiResponse()));
+        render(<App />);
+
+        await screen.findByText('1.50 ft');
+
+        globalThis.fetch.mockResolvedValueOnce(failedResponse());
+        await user.type(screen.getByPlaceholderText('Enter location'), 'Elsewhere, ZZ');
+        await user.click(screen.getByRole('button', { name: 'Go' }));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't load tide data/i);
+        // the previously loaded reading stays put rather than being blanked out
+        expect(screen.getByText('1.50 ft')).toBeInTheDocument();
     });
 });
