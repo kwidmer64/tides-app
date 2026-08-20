@@ -46,7 +46,6 @@ functions/
 - Bad input silently falls back to Nawiliwili, HI without telling the user.
 - Coastal-station-only coverage; inland queries resolve to nearest coast, sometimes far away.
 - No real timezone handling — assumes viewer and location share a timezone.
-- Resubmitting the same location sticks on "Loading...".
 
 ## Things to know before touching code
 
@@ -67,7 +66,3 @@ A full line-by-line review surfaced these. The correctness bugs from that review
 - `functions/package.json` — `name` and `description` fields are empty; minor npm/package hygiene gap.
 - `tides-app.iml` (a JetBrains project file) is tracked in git at the repo root — personal IDE artifact that shouldn't be committed; `.idea/` is already gitignored but this one file predates that rule.
 - `getClosestStation` (`GetTides.js`) uses flat Euclidean distance on raw lat/lng degrees — no `cos(lat)` longitude correction or haversine formula. Gets less accurate further from the equator (matters most for northern coastal stations, e.g. Alaska).
-
-**Accessibility:**
-- `LocationForm.jsx`'s location input has no real `<label>` — a commented-out one exists but isn't wired up (`htmlFor`/`aria-label`); placeholder-only text doesn't satisfy WCAG labeling requirements.
-- The submit button gives no loading/disabled visual state while a fetch is in flight — the only feedback is the whole page swapping to "Loading..." once state updates land.

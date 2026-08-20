@@ -12,7 +12,6 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
   - Inland cities (e.g., Denver, CO) will show tides for the closest coastal station, which can be far off.
 
 - **Display issues**  
-  - Submitting the same location again leaves the display stuck on `Loading...`, since no new data fetch is triggered.
   - Tide predictions are fetched for the queried location's correct local day, but the frontend still assumes the viewer's own clock matches that location's timezone when determining the current tide status shown on screen.
 
 Invalid or empty input, and failed data fetches, now show an inline error message instead of hanging or silently falling back to a default location.
