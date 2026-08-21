@@ -2,7 +2,18 @@ import './App.css';
 import TideChart from "./TideChart.jsx";
 import LocationForm from "./LocationForm.jsx";
 import {formatData, getCurrentTideMeasurement, getTideStatusAt} from "./tideUtilities.js";
+import {formatDistance} from "./units.js";
 import {useEffect, useMemo, useState} from "react";
+
+// the API reports the nearest station in km; the sentence the user reads is
+// assembled here so the displayed unit is a presentation choice
+function buildNoStationMessage(body) {
+    if (body?.place && body?.nearestStation) {
+        return `No tide station near ${body.place}. The nearest one is ${body.nearestStation.name}, ${formatDistance(body.nearestStation.distanceKm)} away.`;
+    }
+
+    return body?.error ?? "No tide station near that location.";
+}
 
 function App() {
     const [data, setData] = useState(null);
@@ -37,7 +48,7 @@ function App() {
                 // the API explains which one was nearest and how far - worth showing
                 if (predictionsRes.status === 404) {
                     const body = await predictionsRes.json().catch(() => null);
-                    error.userMessage = body?.error ?? "No tide station near that location.";
+                    error.userMessage = buildNoStationMessage(body);
                 }
 
                 throw error;

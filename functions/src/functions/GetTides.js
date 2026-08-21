@@ -83,7 +83,10 @@ const handler = async (request, context) => {
             status: 404,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                error: `No tide station near ${geocodeData.name || queryLocation}. The nearest one is ${station.name}, ${distanceKm} km away.`,
+                // distance stays in km here and is formatted for display by the
+                // frontend, so the unit shown can change without touching the API
+                error: `No tide station near ${geocodeData.name || queryLocation}.`,
+                place: geocodeData.name || queryLocation,
                 nearestStation: { name: station.name, distanceKm }
             })
         };

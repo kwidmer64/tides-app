@@ -299,6 +299,18 @@ describe('GetTides coastal restriction', () => {
         expect(String(nearestStation.distanceKm)).toMatch(/^\d+(\.\d)?$/);
     });
 
+    test('leaves distance out of the message, so the UI can pick the unit', async () => {
+        global.fetch.mockResolvedValueOnce(geocodeResponse({ results: [inlandGeocodeResult()] }));
+
+        const res = await handler(makeRequest('Denver, CO'), makeContext());
+        const body = JSON.parse(res.body);
+
+        // km is the internal unit; the frontend converts for display
+        expect(body.error).not.toMatch(/km|mile/i);
+        expect(body.place).toBe('Denver');
+        expect(body.nearestStation.distanceKm).toBeGreaterThan(1000);
+    });
+
     test('makes no NOAA request when the location is out of range', async () => {
         global.fetch.mockResolvedValueOnce(geocodeResponse({ results: [inlandGeocodeResult()] }));
 

@@ -33,8 +33,9 @@ function rejectedResponse() {
         ok: false,
         status: 404,
         json: async () => ({
-            error: 'No tide station near Denver. The nearest one is Newport Bay Entrance, Corona del Mar, 1335 km away.',
-            nearestStation: { name: 'Newport Bay Entrance, Corona del Mar', distanceKm: 1335 }
+            error: 'No tide station near Denver.',
+            place: 'Denver',
+            nearestStation: { name: 'Newport Bay Entrance, Corona del Mar', distanceKm: 1335.5 }
         })
     };
 }
@@ -89,8 +90,22 @@ describe('App', () => {
 
         const alert = await screen.findByRole('alert');
         expect(alert).toHaveTextContent(/no tide station near denver/i);
-        expect(alert).toHaveTextContent(/1335 km away/i);
+        expect(alert).toHaveTextContent(/newport bay entrance/i);
+        // the API reports km; the screen shows miles
+        expect(alert).toHaveTextContent(/830 miles away/i);
+        expect(alert).not.toHaveTextContent(/km/i);
         expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    test('falls back to the API message when the rejection has no structured detail', async () => {
+        globalThis.fetch.mockResolvedValueOnce({
+            ok: false,
+            status: 404,
+            json: async () => ({ error: 'No tide station near there.' })
+        });
+        render(<App />);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(/no tide station near there/i);
     });
 
     test('keeps upstream failure detail out of the message for non-404 errors', async () => {

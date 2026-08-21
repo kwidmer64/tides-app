@@ -9,7 +9,7 @@ This project was inspired by a [design on Threads](https://www.threads.com/@uxde
 
 - **Location restrictions**  
   - The app can only display **US tide data**, as it relies on the NOAA Tides & Currents API.  
-  - Locations with no tide station within 100 km (e.g., Denver, CO, or anywhere on the Great Lakes) return a message naming the nearest station and its distance, rather than a chart of water hundreds of miles away.
+  - Locations with no tide station within about 60 miles (e.g., Denver, CO, or anywhere on the Great Lakes) return a message naming the nearest station and its distance, rather than a chart of water hundreds of miles away.
   - The nearest station is not always the most representative one. Sheltered stations inside inlets and bays report a smaller tidal range than the open coast a few miles away, so a beach query can resolve to a station whose range is noticeably damped.
   - Hartford, CT is tidal on the Connecticut River but its nearest reference station is on the coast.
 
