@@ -33,7 +33,7 @@ Two independently deployed pieces, glued together by Azure Static Web Apps:
 Data flow for a tide lookup (`src/App.jsx` → `functions/src/functions/GetTides.js`):
 1. Frontend calls `GET /api/GetTides?location=<free text>`.
 2. The function geocodes the text via `geocode.maps.co` (API key in `GEO_API_KEY` env var, sent as a Bearer token).
-3. It picks the closest NOAA tide station to the geocoded lat/lng using straight-line distance (`getClosestStation` in `GetTides.js`) against the station list in `functions/src/data/stations.js` (large static dataset of NOAA stations, pre-filtered to `tidal: true`).
+3. It picks the closest NOAA tide station to the geocoded lat/lng using great-circle distance (`getClosestStation` in `GetTides.js`) against `functions/src/data/stations.js` - a generated list of NOAA reference stations, refreshed by `functions/scripts/update-stations.js`.
 4. It fetches today's tide predictions for that station from `api.tidesandcurrents.noaa.gov` (6-minute interval predictions, metric units, local time).
 5. It returns `{ name, displayName, address, predictions }` to the frontend.
 

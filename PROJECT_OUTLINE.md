@@ -25,7 +25,7 @@ src/
   App.css / index.css   styling (Tailwind)
 functions/
   src/functions/GetTides.js   the one HTTP endpoint: geocode -> nearest station -> NOAA predictions
-  src/data/stations.js         static list of ~19k NOAA stations (bundled, filtered to tidal=true at runtime)
+  src/data/stations.js         generated list of 1,256 NOAA reference stations (see scripts/update-stations.js)
   host.json, local.settings.json  Functions host config / local secrets (GEO_API_KEY)
 ```
 
@@ -49,7 +49,7 @@ Code-facing shape of it: coverage is NOAA-station-only (inland queries resolve t
 
 ## Things to know before touching code
 
-- `stations.js` is large (~19k lines) and `require`'d whole into the function at cold start; filtering to `tidal: true` happens at module load, not per-request.
+- `stations.js` is generated, not hand-edited - run `node scripts/update-stations.js` from `functions/` to refresh it from NOAA's metadata API. It holds reference (harmonic) stations only; subordinate stations are excluded because they serve no 6-minute prediction series and are mostly back-bay gauges whose tides differ sharply from the nearby open coast.
 - `getClosestStation` uses haversine distance, so station selection is correct at any latitude. It still only picks the nearest station — it makes no judgement about whether that station is actually relevant to the query (see the inland-location limitation).
 - Tide direction/turning-point logic in `tideUtilities.js` is a simple 3-point neighbor comparison, not a real extrema/interpolation algorithm. First/last points are classified directionally (rising/falling) only — a boundary point can't be verified as a true high/low turning point without a data point from before/after the fetched day.
 - No `staticwebapp.config.json` currently in the repo — routing/rewrite behavior relies on SWA defaults (co-located `functions/` folder as the API).
