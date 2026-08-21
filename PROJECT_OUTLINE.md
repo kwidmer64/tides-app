@@ -37,9 +37,10 @@ functions/
 4. `GetTides.js`:
    - Geocodes via `geocode.maps.co` (needs `GEO_API_KEY` env var / `functions/local.settings.json` locally).
    - Finds nearest station by great-circle (haversine) distance over the tidal station list.
-   - Pulls today's predictions from NOAA CO-OPS API (`datagetter`), 6-min interval, metric, local station time.
-   - Returns `{ name, displayName, address, predictions }`.
-5. Frontend derives current reading + today's high/low turning points (`tideUtilities.js`) and renders the chart + status pill.
+   - Rejects with 404 if the nearest station is over 100 km away (`MAX_STATION_DISTANCE_KM`), naming that station and its distance.
+   - Otherwise pulls two NOAA CO-OPS `datagetter` products in parallel: the 6-min prediction series, and `interval=hilo` for NOAA's own high/low times and heights. Metric, local station time.
+   - Returns `{ name, displayName, address, predictions, extremes, station }`.
+5. Frontend picks the current reading from the series and the tide status from the extremes (`tideUtilities.js`), then renders the chart + status pill.
 
 ## Known limitations / open issues
 
@@ -51,7 +52,8 @@ Code-facing shape of it: coverage is NOAA-station-only (inland queries resolve t
 
 - `stations.js` is generated, not hand-edited - run `node scripts/update-stations.js` from `functions/` to refresh it from NOAA's metadata API. It holds reference (harmonic) stations only; subordinate stations are excluded because they serve no 6-minute prediction series and are mostly back-bay gauges whose tides differ sharply from the nearby open coast.
 - `getClosestStation` uses haversine distance, so station selection is correct at any latitude. It still only picks the nearest station — it makes no judgement about whether that station is actually relevant to the query (see the inland-location limitation).
-- Tide direction/turning-point logic in `tideUtilities.js` is a simple 3-point neighbor comparison, not a real extrema/interpolation algorithm. First/last points are classified directionally (rising/falling) only — a boundary point can't be verified as a true high/low turning point without a data point from before/after the fetched day.
+- Highs and lows are NOAA's, not ours - `interval=hilo` returns them computed from harmonic constituents, so nothing scans the series for local maxima any more. `getTideStatusAt` decides rising/falling/high/low from those turning points, treating anything within `HIGH_LOW_WINDOW_MINUTES` (15) of one as high or low.
+- `getMeasurementAt` and `getTideStatusAt` both take an arbitrary time. That is deliberate: the planned chart-hover feature reads height and status at the pointer position with no change to either.
 - No `staticwebapp.config.json` currently in the repo — routing/rewrite behavior relies on SWA defaults (co-located `functions/` folder as the API).
 
 ## Deferred improvements (not yet done)

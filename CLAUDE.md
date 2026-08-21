@@ -34,13 +34,16 @@ Data flow for a tide lookup (`src/App.jsx` → `functions/src/functions/GetTides
 1. Frontend calls `GET /api/GetTides?location=<free text>`.
 2. The function geocodes the text via `geocode.maps.co` (API key in `GEO_API_KEY` env var, sent as a Bearer token).
 3. It picks the closest NOAA tide station to the geocoded lat/lng using great-circle distance (`getClosestStation` in `GetTides.js`) against `functions/src/data/stations.js` - a generated list of NOAA reference stations, refreshed by `functions/scripts/update-stations.js`.
-4. It fetches today's tide predictions for that station from `api.tidesandcurrents.noaa.gov` (6-minute interval predictions, metric units, local time).
-5. It returns `{ name, displayName, address, predictions }` to the frontend.
+4. If that station is more than `MAX_STATION_DISTANCE_KM` (100) away, it returns 404 with the nearest station's name and distance — the location has no usable tide data, and says so rather than charting distant water.
+5. Otherwise it fetches two NOAA products for the station in parallel: the 6-minute prediction series, and the same request with `interval=hilo`, which returns NOAA's own computed high/low times and heights.
+6. It returns `{ name, displayName, address, predictions, extremes, station }` to the frontend.
 
-On the frontend, `src/tideUtilities.js` turns the raw NOAA prediction series into derived data:
-- `formatData` — trims timestamps to `HH:MM` and classifies each point's tide direction (`2` high, `1` rising, `-1` falling, `-2` low) by comparing to neighbors.
-- `getCurrentTideMeasurement` — finds the prediction closest to the current clock time.
-- `getDayTideCycle` — reduces the full day to just the local min/max turning points plus first/last reading, which is what `TideChart.jsx` (a Recharts `AreaChart`) actually plots.
+On the frontend, `src/tideUtilities.js` turns the raw NOAA payload into derived data:
+- `formatData` — trims timestamps to `HH:MM`, leaving other fields alone, so it serves both the series and the extremes.
+- `getMeasurementAt` — the reading nearest a given time; `getCurrentTideMeasurement` is a caller of it that passes "now".
+- `getTideStatusAt` — what the tide is doing at a given time (`2` high, `1` rising, `-1` falling, `-2` low), judged against the reported extremes rather than neighbouring samples.
+
+Both lookups take an arbitrary time rather than assuming the current one, so a chart hover can reuse them unchanged. `TideChart.jsx` (a Recharts `AreaChart`) plots the full series with the extremes marked on it.
 
 `App.jsx` holds the top-level state (`location` search string, `displayLocation`, `fullDisplayLocation`, fetched `data`) and re-fetches from `/api/GetTides` whenever `location` changes. `LocationForm.jsx` is a plain controlled input that hands the raw text back up via `onSubmit`.
 

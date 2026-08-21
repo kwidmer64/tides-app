@@ -47,6 +47,32 @@ function defaultPredictions() {
     ];
 }
 
+function defaultExtremes() {
+    return [
+        { t: '2026-08-16 02:01', v: '1.244', type: 'H' },
+        { t: '2026-08-16 08:02', v: '0.378', type: 'L' }
+    ];
+}
+
+// Denver - nearest reference station is roughly 1335 km away
+function inlandGeocodeResult() {
+    return defaultGeocodeResult({
+        lat: '39.7392',
+        lon: '-104.9903',
+        name: 'Denver',
+        display_name: 'Denver, Colorado, United States',
+        address: { city: 'Denver', state: 'Colorado' }
+    });
+}
+
+// the handler makes two prediction calls: the 6-minute series, then hilo
+function mockBothPredictionCalls() {
+    global.fetch
+        .mockResolvedValueOnce(geocodeResponse())
+        .mockResolvedValueOnce(tidesResponse())
+        .mockResolvedValueOnce(tidesResponse({ predictions: defaultExtremes() }));
+}
+
 describe('getClosestStation', () => {
     const stations = [
         { id: 'A', lat: 0, lng: 0, name: 'Origin' },
@@ -55,20 +81,26 @@ describe('getClosestStation', () => {
     ];
 
     test('picks the nearest of several candidates by lat/lng', () => {
-        const closest = getClosestStation({ lat: 0.9, lng: 0.9 }, stations);
-        expect(closest.id).toBe('C');
+        const { station } = getClosestStation({ lat: 0.9, lng: 0.9 }, stations);
+        expect(station.id).toBe('C');
     });
 
     test('handles a single-station list', () => {
-        const closest = getClosestStation({ lat: 50, lng: 50 }, [stations[1]]);
-        expect(closest.id).toBe('B');
+        const { station } = getClosestStation({ lat: 50, lng: 50 }, [stations[1]]);
+        expect(station.id).toBe('B');
     });
 
     test('picks correctly regardless of input ordering', () => {
         const forward = getClosestStation({ lat: 0.9, lng: 0.9 }, stations);
         const reversed = getClosestStation({ lat: 0.9, lng: 0.9 }, [...stations].reverse());
-        expect(forward.id).toBe('C');
-        expect(reversed.id).toBe('C');
+        expect(forward.station.id).toBe('C');
+        expect(reversed.station.id).toBe('C');
+    });
+
+    test('reports how far away the chosen station is, in km', () => {
+        // one degree of latitude is about 111 km
+        const { distance } = getClosestStation({ lat: 0, lng: 0 }, [{ id: 'A', lat: 1, lng: 0 }]);
+        expect(distance).toBeCloseTo(111.19, 1);
     });
 
     test('measures real distance, not raw degrees, at high latitude', () => {
@@ -79,9 +111,9 @@ describe('getClosestStation', () => {
             { id: 'NORTH', lat: 61.5, lng: 0 }  // ~167 km away, but only 1.5 degrees
         ];
 
-        const closest = getClosestStation({ lat: 60, lng: 0 }, highLatStations);
+        const { station } = getClosestStation({ lat: 60, lng: 0 }, highLatStations);
 
-        expect(closest.id).toBe('EAST');
+        expect(station.id).toBe('EAST');
     });
 });
 
@@ -105,9 +137,7 @@ describe('GetTides handler', () => {
     });
 
     test('builds the geocode request with an encoded query and the API key as a bearer token', async () => {
-        global.fetch
-            .mockResolvedValueOnce(geocodeResponse())
-            .mockResolvedValueOnce(tidesResponse());
+        mockBothPredictionCalls();
 
         await handler(makeRequest('Surf City, NJ'), makeContext());
 
@@ -120,9 +150,7 @@ describe('GetTides handler', () => {
     });
 
     test('encodes locations containing special characters like spaces and &', async () => {
-        global.fetch
-            .mockResolvedValueOnce(geocodeResponse())
-            .mockResolvedValueOnce(tidesResponse());
+        mockBothPredictionCalls();
 
         await handler(makeRequest('Cape May & Wildwood'), makeContext());
 
@@ -162,9 +190,7 @@ describe('GetTides handler', () => {
     });
 
     test('builds the NOAA request for the current day, not a fixed/stale date', async () => {
-        global.fetch
-            .mockResolvedValueOnce(geocodeResponse())
-            .mockResolvedValueOnce(tidesResponse());
+        mockBothPredictionCalls();
 
         await handler(makeRequest('Surf City, NJ'), makeContext());
 
@@ -178,6 +204,22 @@ describe('GetTides handler', () => {
         expect(tidesUrl).not.toContain('end_date');
     });
 
+    test('requests the 6-minute series and the high/low product for the same station', async () => {
+        mockBothPredictionCalls();
+
+        await handler(makeRequest('Surf City, NJ'), makeContext());
+
+        expect(global.fetch).toHaveBeenCalledTimes(3);
+        const [seriesUrl] = global.fetch.mock.calls[1];
+        const [hiloUrl] = global.fetch.mock.calls[2];
+
+        expect(seriesUrl).not.toContain('interval=');
+        expect(hiloUrl).toContain('interval=hilo');
+
+        const stationOf = url => new URL(url).searchParams.get('station');
+        expect(stationOf(hiloUrl)).toBe(stationOf(seriesUrl));
+    });
+
     test('returns 200 with the assembled name, displayName, address and predictions', async () => {
         const geocodeResult = defaultGeocodeResult({
             name: 'Surf City',
@@ -186,19 +228,89 @@ describe('GetTides handler', () => {
         });
         const predictions = defaultPredictions();
 
+        const extremes = defaultExtremes();
+
         global.fetch
             .mockResolvedValueOnce(geocodeResponse({ results: [geocodeResult] }))
-            .mockResolvedValueOnce(tidesResponse({ predictions }));
+            .mockResolvedValueOnce(tidesResponse({ predictions }))
+            .mockResolvedValueOnce(tidesResponse({ predictions: extremes }));
 
         const res = await handler(makeRequest('Surf City, NJ'), makeContext());
 
         expect(res.status).toBe(200);
         expect(res.headers['Content-Type']).toBe('application/json');
-        expect(JSON.parse(res.body)).toEqual({
+
+        const body = JSON.parse(res.body);
+        expect(body).toMatchObject({
             name: geocodeResult.name,
             displayName: geocodeResult.display_name,
             address: geocodeResult.address,
-            predictions
+            predictions,
+            extremes
         });
+        expect(body.station.name).toEqual(expect.any(String));
+        expect(body.station.distanceKm).toBeLessThan(100);
+    });
+
+    test('returns 502 when the high/low request fails even though the series succeeded', async () => {
+        global.fetch
+            .mockResolvedValueOnce(geocodeResponse())
+            .mockResolvedValueOnce(tidesResponse())
+            .mockResolvedValueOnce(tidesResponse({ ok: false, status: 503 }));
+
+        const res = await handler(makeRequest('Surf City, NJ'), makeContext());
+
+        expect(res.status).toBe(502);
+        expect(JSON.parse(res.body).error).toMatch(/noaa\.gov/);
+    });
+});
+
+describe('GetTides coastal restriction', () => {
+    beforeEach(() => {
+        process.env.GEO_API_KEY = 'test-geo-api-key';
+        global.fetch = jest.fn();
+    });
+
+    afterEach(() => {
+        jest.resetAllMocks();
+        delete global.fetch;
+    });
+
+    test('refuses a location with no tide station within range', async () => {
+        global.fetch.mockResolvedValueOnce(geocodeResponse({ results: [inlandGeocodeResult()] }));
+
+        const res = await handler(makeRequest('Denver, CO'), makeContext());
+
+        expect(res.status).toBe(404);
+        expect(JSON.parse(res.body).error).toMatch(/no tide station/i);
+    });
+
+    test('names the nearest station and its distance so the message can explain itself', async () => {
+        global.fetch.mockResolvedValueOnce(geocodeResponse({ results: [inlandGeocodeResult()] }));
+
+        const res = await handler(makeRequest('Denver, CO'), makeContext());
+        const { nearestStation } = JSON.parse(res.body);
+
+        expect(nearestStation.name).toEqual(expect.any(String));
+        expect(nearestStation.distanceKm).toBeGreaterThan(1000);
+        // display data - one decimal place, not raw float precision
+        expect(String(nearestStation.distanceKm)).toMatch(/^\d+(\.\d)?$/);
+    });
+
+    test('makes no NOAA request when the location is out of range', async () => {
+        global.fetch.mockResolvedValueOnce(geocodeResponse({ results: [inlandGeocodeResult()] }));
+
+        await handler(makeRequest('Denver, CO'), makeContext());
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('allows a coastal location through to the NOAA calls', async () => {
+        mockBothPredictionCalls();
+
+        const res = await handler(makeRequest('Surf City, NJ'), makeContext());
+
+        expect(res.status).toBe(200);
+        expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 });

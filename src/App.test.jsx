@@ -11,13 +11,31 @@ const predictions = [
     { t: '2026-08-16 23:54', v: '1.200' }
 ];
 
+const extremes = [
+    { t: '2026-08-16 06:00', v: '2.000', type: 'H' },
+    { t: '2026-08-16 18:00', v: '0.500', type: 'L' }
+];
+
 function apiResponse(overrides = {}) {
     return {
         name: 'Testville',
         displayName: 'Testville, Test County, Testland',
         address: { city: 'Testville', state: 'Testland' },
         predictions,
+        extremes,
+        station: { name: 'Test Harbor', distanceKm: 3.2 },
         ...overrides
+    };
+}
+
+function rejectedResponse() {
+    return {
+        ok: false,
+        status: 404,
+        json: async () => ({
+            error: 'No tide station near Denver. The nearest one is Newport Bay Entrance, Corona del Mar, 1335 km away.',
+            nearestStation: { name: 'Newport Bay Entrance, Corona del Mar', distanceKm: 1335 }
+        })
     };
 }
 
@@ -55,6 +73,33 @@ describe('App', () => {
 
         expect(await screen.findByText('1.50 ft')).toBeInTheDocument();
         expect(screen.getByText('Testville')).toBeInTheDocument();
+    });
+
+    test('derives the tide status from the reported extremes', async () => {
+        globalThis.fetch.mockResolvedValueOnce(okJsonResponse(apiResponse()));
+        render(<App />);
+
+        // noon sits between the 06:00 high and the 18:00 low
+        expect(await screen.findByText('Falling tide')).toBeInTheDocument();
+    });
+
+    test('explains why a location with no nearby station has no data', async () => {
+        globalThis.fetch.mockResolvedValueOnce(rejectedResponse());
+        render(<App />);
+
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent(/no tide station near denver/i);
+        expect(alert).toHaveTextContent(/1335 km away/i);
+        expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+
+    test('keeps upstream failure detail out of the message for non-404 errors', async () => {
+        globalThis.fetch.mockResolvedValueOnce(failedResponse(502));
+        render(<App />);
+
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent(/couldn't load tide data/i);
+        expect(alert).not.toHaveTextContent(/noaa/i);
     });
 
     test('shows an inline error instead of hanging when the fetch fails', async () => {

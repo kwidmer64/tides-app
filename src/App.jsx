@@ -1,11 +1,12 @@
 import './App.css';
 import TideChart from "./TideChart.jsx";
 import LocationForm from "./LocationForm.jsx";
-import {formatData, getCurrentTideMeasurement, getDayTideCycle} from "./tideUtilities.js";
+import {formatData, getCurrentTideMeasurement, getTideStatusAt} from "./tideUtilities.js";
 import {useEffect, useMemo, useState} from "react";
 
 function App() {
     const [data, setData] = useState(null);
+    const [extremes, setExtremes] = useState(null);
     const [location, setLocation] = useState("Surf City, NJ");
     const [displayLocation, setDisplayLocation] = useState("Surf City, New Jersey");
     const [fullDisplayLocation, setFullDisplayLocation] = useState("");
@@ -30,7 +31,16 @@ function App() {
                 signal: controller.signal
             });
             if (!predictionsRes.ok) {
-                throw new Error(`GetTides request failed with status: ${predictionsRes.status}`);
+                const error = new Error(`GetTides request failed with status: ${predictionsRes.status}`);
+
+                // a 404 means the location simply has no tide station near it, and
+                // the API explains which one was nearest and how far - worth showing
+                if (predictionsRes.status === 404) {
+                    const body = await predictionsRes.json().catch(() => null);
+                    error.userMessage = body?.error ?? "No tide station near that location.";
+                }
+
+                throw error;
             }
             return await predictionsRes.json();
         }
@@ -41,6 +51,7 @@ function App() {
         fetchTidesData().then(predictionsData => {
             // set the predictions data and display location
             setData(predictionsData.predictions);
+            setExtremes(predictionsData.extremes);
             setDisplayLocation(`${predictionsData.name}`);
             // Build formatted full location from structured address
             const address = predictionsData.address;
@@ -59,25 +70,28 @@ function App() {
             // an aborted request has been superseded - the newer one owns the loading state
             if (err.name === 'AbortError') return;
             console.error(err);
-            setFetchError("Couldn't load tide data for that location. Try again.");
+            setFetchError(err.userMessage ?? "Couldn't load tide data for that location. Try again.");
             setIsLoading(false);
         });
 
         return () => controller.abort();
     }, [location, refetchNonce]);
 
-    const { currentTideMeasurement, tideDay, tideStatus } = useMemo(() => {
+    const { currentTideMeasurement, series, dayExtremes, tideStatus } = useMemo(() => {
         if (!data) return {};
 
-        const formattedData = formatData(data);
-        const currentTideMeasurement = getCurrentTideMeasurement(formattedData, time);
-        const tideDay = getDayTideCycle(formattedData); // get the highest/lowest tides for the day
+        const series = formatData(data);
+        const dayExtremes = formatData(extremes ?? []);
+        const currentTideMeasurement = getCurrentTideMeasurement(series, time);
+
+        // judged against NOAA's own turning points rather than neighbouring samples
+        const currentTideStatus = getTideStatusAt(time, dayExtremes);
 
         // set text for the tide status label
         let tideStatusText;
         let tideStatusIndicator;
 
-        switch (currentTideMeasurement.tideStatus) {
+        switch (currentTideStatus) {
             case 2:
                 tideStatusText = "High tide";
                 tideStatusIndicator = "↑";
@@ -95,11 +109,12 @@ function App() {
                 tideStatusIndicator = "↓";
                 break;
             default:
-                tideStatusText = `tideStatus: ${currentTideMeasurement.tideStatus}`;
+                tideStatusText = "Tide";
+                tideStatusIndicator = "";
         }
 
-        return {currentTideMeasurement, tideDay, tideStatus: [tideStatusText, tideStatusIndicator]};
-    }, [data, time]);
+        return {currentTideMeasurement, series, dayExtremes, tideStatus: [tideStatusText, tideStatusIndicator]};
+    }, [data, extremes, time]);
 
     if (!currentTideMeasurement || !tideStatus) {
         return (
@@ -141,7 +156,7 @@ function App() {
               </div>
           </div>
           <div className={"h-40"}>
-              <TideChart tideDay={tideDay} formattedTime={formattedTime} time={time}/>
+              <TideChart series={series} extremes={dayExtremes} formattedTime={formattedTime} time={time}/>
           </div>
           <LocationForm onSubmit={handleFormSubmit} loading={isLoading} />
           {/* the early-return error branch above only covers the first load, when there is no data yet */}
