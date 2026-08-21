@@ -38,7 +38,7 @@ functions/
    - Geocodes via `geocode.maps.co` (needs `GEO_API_KEY` env var / `functions/local.settings.json` locally).
    - Finds nearest station by great-circle (haversine) distance over the tidal station list.
    - Rejects with 404 if the nearest station is over 100 km away (`MAX_STATION_DISTANCE_KM`), naming that station and its distance.
-   - Otherwise pulls two NOAA CO-OPS `datagetter` products in parallel: the 6-min prediction series, and `interval=hilo` for NOAA's own high/low times and heights. Metric, local station time.
+   - Otherwise pulls two NOAA CO-OPS `datagetter` products in parallel: the 6-min prediction series, and `interval=hilo` for NOAA's own high/low times and heights. Heights in feet (`units=english`), local station time.
    - Returns `{ name, displayName, address, predictions, extremes, station }`.
 5. Frontend picks the current reading from the series and the tide status from the extremes (`tideUtilities.js`), then renders the chart + status pill.
 

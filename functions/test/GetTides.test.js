@@ -197,7 +197,9 @@ describe('GetTides handler', () => {
         const [tidesUrl] = global.fetch.mock.calls[1];
         expect(tidesUrl).toContain('product=predictions');
         expect(tidesUrl).toContain('datum=MLLW');
-        expect(tidesUrl).toContain('units=metric');
+        // the app labels heights in feet, so ask NOAA for feet rather than
+        // converting - it is a US-only app
+        expect(tidesUrl).toContain('units=english');
         expect(tidesUrl).toContain('time_zone=lst_ldt');
         expect(tidesUrl).toContain('date=today');
         expect(tidesUrl).not.toContain('begin_date');
@@ -295,6 +297,18 @@ describe('GetTides coastal restriction', () => {
         expect(nearestStation.distanceKm).toBeGreaterThan(1000);
         // display data - one decimal place, not raw float precision
         expect(String(nearestStation.distanceKm)).toMatch(/^\d+(\.\d)?$/);
+    });
+
+    test('leaves distance out of the message, so the UI can pick the unit', async () => {
+        global.fetch.mockResolvedValueOnce(geocodeResponse({ results: [inlandGeocodeResult()] }));
+
+        const res = await handler(makeRequest('Denver, CO'), makeContext());
+        const body = JSON.parse(res.body);
+
+        // km is the internal unit; the frontend converts for display
+        expect(body.error).not.toMatch(/km|mile/i);
+        expect(body.place).toBe('Denver');
+        expect(body.nearestStation.distanceKm).toBeGreaterThan(1000);
     });
 
     test('makes no NOAA request when the location is out of range', async () => {
